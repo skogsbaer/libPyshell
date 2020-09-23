@@ -14,6 +14,7 @@ import atexit
 import tempfile
 import shutil
 import types
+import fnmatch
 
 _pyshell_debug = os.environ.get('PYSHELL_DEBUG', 'no').lower()
 PYSHELL_DEBUG = _pyshell_debug in ['yes', 'true', 'on']
@@ -36,7 +37,7 @@ def resolveProg(*l):
     """
     for x in l:
         ecode = run('command -v %s' % quote(x), captureStdout=DEV_NULL,
-                    failOnError=False).exitcode
+                    onError='ignore').exitcode
         if ecode == 0:
             return x
     return None
@@ -45,7 +46,7 @@ def gnuProg(x):
     prog = resolveProg('g' + x, x)
     if not prog:
         raise ShellError('Program ' + str(x) + ' not found at all')
-    res = run('%s --version' % prog, captureStdout=True, failOnError=False)
+    res = run('%s --version' % prog, captureStdout=True, onError='ignore')
     if 'GNU' in res.stdout:
         debug('Resolved program %s as %s' % (x, prog))
         return prog
@@ -104,7 +105,7 @@ def splitOn(splitter):
 
 def run(cmd,
         captureStdout=False,
-        failOnError=True,
+        onError='raise',
         input=None,
         encoding='utf-8'
         ):
@@ -118,8 +119,9 @@ def run(cmd,
         * A function: stdout is captured and the result of applying the function to the captured
           output is returned
         * An existing file descriptor or a file object: stdout goes to the file descriptor or file
-      failOnError - a boolean flag indicating whether an exception should be thrown if the
-        child process finishes with an exit code different from 0.
+      onError - either 'raise' (raise an exception if child process finishes with an exit code
+        different from 0), or 'die' (terminate the whole process in case the child process terminates
+        abnormally), or 'ignore'.
       input - string that is send to the stdin of the child process.
       encoding - the encoding for stdin and stdout. If encoding == 'raw',
         then the raw bytes are passed/returned.
@@ -144,7 +146,7 @@ def run(cmd,
     ... except RunError:
     ...     pass
     ...
-    >>> run('false', failOnError=False) == RunResult(exitcode=1, stdout='')
+    >>> run('false', onError='ignore') == RunResult(exitcode=1, stdout='')
     True
     """
     if not isinstance(cmd, str):
@@ -169,15 +171,17 @@ def run(cmd,
         if encoding != 'raw':
             input = input.encode(encoding)
     debug('Running command ' + repr(cmd) + ' with captureStdout=' + str(captureStdout) +
-          ', failOnError=' + str(failOnError) + ', input=' + input_str)
+          ', onError=' + onError + ', input=' + input_str)
     pipe = subprocess.Popen(cmd, shell=True, stdout=stdout, stdin=stdin)
     (stdoutData, _stderrData) = pipe.communicate(input=input)
     if stdoutData and encoding != 'raw':
         stdoutData = stdoutData.decode(encoding)
     exitcode = pipe.returncode
-    if failOnError and exitcode != 0:
+    if onError == 'raise' and exitcode != 0:
         err = RunError(cmd, exitcode)
         raise err
+    if onError == 'die' and exitcode != 0:
+        sys.exit(exitcode)
     stdoutRes = stdoutData
     if stdoutRes is None:
         stdoutRes = ''
@@ -236,7 +240,7 @@ def cd(x):
 def pwd():
     return os.getcwd()
 
-class workingDirectory:
+class workingDir:
     def __init__(self, new_dir):
         self.new_dir = new_dir
     def __enter__(self):
@@ -272,6 +276,22 @@ class tempDir:
     def __exit__(self, exc_type, value, traceback):
         rmdir(self.dir_to_delete, recursive=True)
         return False # reraise expection
+
+def ls(d, *globs):
+    """
+    >>> ls('../src/', '*.py', '*')
+    ['../src/shell.py']
+    """
+    res = []
+    for f in os.listdir(d):
+        for g in globs:
+            if fnmatch.fnmatch(f, g):
+                res.append(os.path.join(d, f))
+                break
+    return res
+
+isDir = os.path.isdir
+isFile = os.path.isfile
 
 if __name__ == "__main__":
     import doctest
