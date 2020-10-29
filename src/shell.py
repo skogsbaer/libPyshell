@@ -75,10 +75,13 @@ class ShellError(BaseException):
         return self.msg
 
 class RunError(ShellError):
-    def __init__(self, cmd, exitcode):
+    def __init__(self, cmd, exitcode, stderr=None):
         self.cmd = cmd
         self.exitcode = exitcode
+        self.stderr = stderr
         msg = 'Command ' + repr(self.cmd) + " failed with exit code " + str(self.exitcode)
+        if stderr:
+            msg = msg + 'stderr:\n' + str(stderr)
         super(RunError, self).__init__(msg)
 
 def splitOn(splitter):
@@ -103,21 +106,26 @@ def splitOn(splitter):
             return l
     return f
 
+def splitLines(s):
+    return s.strip().split('\n')
+
 def run(cmd,
         captureStdout=False,
         onError='raise',
         input=None,
-        encoding='utf-8'
+        encoding='utf-8',
+        stderrToStdout=False
         ):
     """Run the given command.
 
     Parameters:
-      cmd - the command string, subject to shell exansion
+      cmd - the command, either a list (command with raw args)
+         or a string (subject to shell exansion)
       captureStdout - what to do with stdout of the child process. Possible values:
         * True: stdout is captured and returned
         * False: stdout is not captured and goes to stdout of the parent process)
         * A function: stdout is captured and the result of applying the function to the captured
-          output is returned
+          output is returned. Use splitLines as this function to split the output into lines
         * An existing file descriptor or a file object: stdout goes to the file descriptor or file
       onError - either 'raise' (raise an exception if child process finishes with an exit code
         different from 0), or 'die' (terminate the whole process in case the child process terminates
@@ -149,10 +157,11 @@ def run(cmd,
     >>> run('false', onError='ignore') == RunResult(exitcode=1, stdout='')
     True
     """
-    if not isinstance(cmd, str):
-        raise ShellError('cmd parameter must be a string')
-    cmd = cmd.replace('\x00', ' ')
-    cmd = cmd.replace('\n', ' ')
+    if type(cmd) != str and type(cmd) != list:
+        raise ShellError('cmd parameter must be a string or a list')
+    if type(cmd) == str:
+        cmd = cmd.replace('\x00', ' ')
+        cmd = cmd.replace('\n', ' ')
     stdoutIsFileLike = type(captureStdout) == int or hasattr(captureStdout, 'write')
     stdoutIsProcFun = not stdoutIsFileLike and hasattr(captureStdout, '__call__')
     shouldReturnStdout = (stdoutIsProcFun or
@@ -165,6 +174,9 @@ def run(cmd,
     stdin = None
     if input:
         stdin = subprocess.PIPE
+    stderr = None
+    if stderrToStdout:
+        stderr = subprocess.STDOUT
     input_str = 'None'
     if input:
         input_str = '<' + str(len(input)) + ' characters>'
@@ -172,13 +184,18 @@ def run(cmd,
             input = input.encode(encoding)
     debug('Running command ' + repr(cmd) + ' with captureStdout=' + str(captureStdout) +
           ', onError=' + onError + ', input=' + input_str)
-    pipe = subprocess.Popen(cmd, shell=True, stdout=stdout, stdin=stdin)
-    (stdoutData, _stderrData) = pipe.communicate(input=input)
-    if stdoutData and encoding != 'raw':
+    pipe = subprocess.Popen(cmd, shell=(type(cmd) == str), stdout=stdout, stdin=stdin, stderr=stderr)
+    (stdoutData, stderrData) = pipe.communicate(input=input)
+    if stdoutData is not None and encoding != 'raw':
         stdoutData = stdoutData.decode(encoding)
+    if stderrData is not None and encoding != 'raw':
+        stderrData = stderrData.decode(encoding)
     exitcode = pipe.returncode
     if onError == 'raise' and exitcode != 0:
-        err = RunError(cmd, exitcode)
+        d = stderrData
+        if stderrToStdout:
+            d = stdoutData
+        err = RunError(cmd, exitcode, d)
         raise err
     if onError == 'die' and exitcode != 0:
         sys.exit(exitcode)
@@ -212,8 +229,6 @@ def mergeDicts(*l):
     return res
 
 THIS_DIR = os.path.dirname(os.path.realpath(sys.argv[0]))
-FIND = gnuProg('find')
-SED = gnuProg('sed')
 basename = os.path.basename
 dirname = os.path.dirname
 exists = os.path.exists
