@@ -229,13 +229,32 @@ def mergeDicts(*l):
     return res
 
 THIS_DIR = os.path.dirname(os.path.realpath(sys.argv[0]))
+
 basename = os.path.basename
 dirname = os.path.dirname
+
 exists = os.path.exists
-isfile = os.path.isfile
-isdir = os.path.isdir
-islink = os.path.islink
+
+isfile = os.path.isfile # DEPRECATED
+isFile = os.path.isfile
+
+isdir = os.path.isdir # DEPRECATED
+isDir = os.path.isdir
+
+islink = os.path.islink # DEPRECATED
+isLink = os.path.islink
+
+splitext = os.path.splitext # DEPRECATED
+splitExt = os.path.splitext
+
+def removeExt(p):
+    return splitext(p)[0]
+
+def getExt(p):
+    return splitext(p)[1]
+
 expandEnvVars = os.path.expandvars
+
 pjoin = os.path.join
 
 def abort(msg):
@@ -304,9 +323,6 @@ def ls(d, *globs):
                 res.append(os.path.join(d, f))
                 break
     return res
-
-isDir = os.path.isdir
-isFile = os.path.isfile
 
 if __name__ == "__main__":
     import doctest
