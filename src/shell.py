@@ -122,8 +122,8 @@ def run(cmd,
       cmd - the command, either a list (command with raw args)
          or a string (subject to shell exansion)
       captureStdout - what to do with stdout of the child process. Possible values:
+        * False: stdout is not captured and goes to stdout of the parent process (the default)
         * True: stdout is captured and returned
-        * False: stdout is not captured and goes to stdout of the parent process)
         * A function: stdout is captured and the result of applying the function to the captured
           output is returned. Use splitLines as this function to split the output into lines
         * An existing file descriptor or a file object: stdout goes to the file descriptor or file
@@ -231,6 +231,7 @@ def mergeDicts(*l):
 THIS_DIR = os.path.dirname(os.path.realpath(sys.argv[0]))
 
 basename = os.path.basename
+filename = os.path.basename
 dirname = os.path.dirname
 
 exists = os.path.exists
@@ -256,6 +257,7 @@ def getExt(p):
 expandEnvVars = os.path.expandvars
 
 pjoin = os.path.join
+mv = os.rename
 
 def abort(msg):
     sys.stderr.write('ERROR: ' + msg + '\n')
@@ -317,6 +319,8 @@ def ls(d, *globs):
     ['../src/shell.py']
     """
     res = []
+    if not d:
+        d = '.'
     for f in os.listdir(d):
         for g in globs:
             if fnmatch.fnmatch(f, g):
