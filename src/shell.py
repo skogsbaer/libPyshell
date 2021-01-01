@@ -15,6 +15,7 @@ import tempfile
 import shutil
 import types
 import fnmatch
+import shutil
 
 _pyshell_debug = os.environ.get('PYSHELL_DEBUG', 'no').lower()
 PYSHELL_DEBUG = _pyshell_debug in ['yes', 'true', 'on']
@@ -114,24 +115,26 @@ def run(cmd,
         onError='raise',
         input=None,
         encoding='utf-8',
-        stderrToStdout=False
+        stderrToStdout=False,
+        cwd=None,
         ):
     """Run the given command.
 
     Parameters:
-      cmd - the command, either a list (command with raw args)
+      cmd: the command, either a list (command with raw args)
          or a string (subject to shell exansion)
-      captureStdout - what to do with stdout of the child process. Possible values:
+      captureStdout: what to do with stdout of the child process. Possible values:
         * False: stdout is not captured and goes to stdout of the parent process (the default)
         * True: stdout is captured and returned
         * A function: stdout is captured and the result of applying the function to the captured
           output is returned. Use splitLines as this function to split the output into lines
         * An existing file descriptor or a file object: stdout goes to the file descriptor or file
-      onError - either 'raise' (raise an exception if child process finishes with an exit code
-        different from 0), or 'die' (terminate the whole process in case the child process terminates
-        abnormally), or 'ignore'.
-      input - string that is send to the stdin of the child process.
-      encoding - the encoding for stdin and stdout. If encoding == 'raw',
+      onError: what to do if the child process finishes with an exit code different from 0
+        * 'raise': raise an exception
+        * 'die': terminate the whole process
+        * 'ignore'
+      input: string that is send to the stdin of the child process.
+      encoding: the encoding for stdin and stdout. If encoding == 'raw',
         then the raw bytes are passed/returned.
     Return value:
       A `RunResult` value, given access to the captured stdout of the child process (if it was
@@ -184,7 +187,11 @@ def run(cmd,
             input = input.encode(encoding)
     debug('Running command ' + repr(cmd) + ' with captureStdout=' + str(captureStdout) +
           ', onError=' + onError + ', input=' + input_str)
-    pipe = subprocess.Popen(cmd, shell=(type(cmd) == str), stdout=stdout, stdin=stdin, stderr=stderr)
+    pipe = subprocess.Popen(
+        cmd, shell=(type(cmd) == str),
+        stdout=stdout, stdin=stdin, stderr=stderr,
+        cwd=cwd
+    )
     (stdoutData, stderrData) = pipe.communicate(input=input)
     if stdoutData is not None and encoding != 'raw':
         stdoutData = stdoutData.decode(encoding)
@@ -258,6 +265,14 @@ expandEnvVars = os.path.expandvars
 
 pjoin = os.path.join
 mv = os.rename
+
+def cp(src, target):
+    if isDir(target):
+        fname = basename(src)
+        targetfile = pjoin(target, fname)
+    else:
+        targetfile = target
+    return shutil.copyfile(src, targetfile)
 
 def abort(msg):
     sys.stderr.write('ERROR: ' + msg + '\n')
