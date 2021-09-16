@@ -130,7 +130,7 @@ def run(cmd,
           output is returned. Use splitLines as this function to split the output into lines
         * An existing file descriptor or a file object: stdout goes to the file descriptor or file
       onError: what to do if the child process finishes with an exit code different from 0
-        * 'raise': raise an exception
+        * 'raise': raise an exception (the default)
         * 'die': terminate the whole process
         * 'ignore'
       input: string that is send to the stdin of the child process.
