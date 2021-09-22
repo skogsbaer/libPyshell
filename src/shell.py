@@ -310,6 +310,7 @@ def rmdir(d, recursive=False):
     else:
         os.rmdir(d)
 
+# See https://stackoverflow.com/questions/9741351/how-to-find-exit-code-or-reason-when-atexit-callback-is-called-in-python
 class ExitHooks(object):
     def __init__(self):
         self.exitCode = None
@@ -317,32 +318,41 @@ class ExitHooks(object):
 
     def hook(self):
         self._origExit = sys.exit
+        self._origExcHandler = sys.excepthook
         sys.exit = self.exit
         sys.excepthook = self.exc_handler
 
     def exit(self, code=0):
         if code is None:
-            code = 0
+            myCode = 0
         elif type(code) != int:
-            code = 1
-        self.exitCode = code
+            myCode = 1
+        else:
+            myCode = code
+        self.exitCode = myCode
         self._origExit(code)
 
     def exc_handler(self, exc_type, exc, *args):
         self.exception = exc
+        self._origExcHandler(exc_type, exc, *args)
+
+    def isExitSuccess(self):
+        return (self.exitCode is None or self.exitCode == 0) and self.exception is None
+
+    def isExitFailure(self):
+        return not self.isExitSuccess()
 
 _hooks = ExitHooks()
 _hooks.hook()
 
 def registerAtExit(action, mode):
     def f():
-        e = _hooks.exitCode
         debug(f'Running exit hook, exit code: {e}, mode: {mode}')
         if mode is True:
             action()
-        elif mode in ['ifSuccess'] and e == 0:
+        elif mode in ['ifSuccess'] and hooks.isExitSuccess():
             action()
-        elif mode in ['ifFailure'] and e != 0:
+        elif mode in ['ifFailure'] and hooks.isExitFailure():
             action()
         else:
             debug('Not running exit action')
