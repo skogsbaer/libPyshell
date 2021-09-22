@@ -117,6 +117,8 @@ def run(cmd,
         encoding='utf-8',
         stderrToStdout=False,
         cwd=None,
+        env=None,
+        freshEnv=None
         ):
     """Run the given command.
 
@@ -136,6 +138,8 @@ def run(cmd,
       input: string that is send to the stdin of the child process.
       encoding: the encoding for stdin and stdout. If encoding == 'raw',
         then the raw bytes are passed/returned.
+      env: additional environment variables
+      freshEnv: completely fresh environment
     Return value:
       A `RunResult` value, given access to the captured stdout of the child process (if it was
       captured at all) and to the exit code of the child process.
@@ -187,10 +191,18 @@ def run(cmd,
             input = input.encode(encoding)
     debug('Running command ' + repr(cmd) + ' with captureStdout=' + str(captureStdout) +
           ', onError=' + onError + ', input=' + input_str)
+    popenEnv = None
+    if env:
+        popenEnv = os.environ.copy()
+        popenEnv.update(env)
+    elif freshEnv:
+        popenEnv = freshEnv.copy()
+        if env:
+            popenEnv.update(env)
     pipe = subprocess.Popen(
         cmd, shell=(type(cmd) == str),
         stdout=stdout, stdin=stdin, stderr=stderr,
-        cwd=cwd
+        cwd=cwd, env=popenEnv
     )
     (stdoutData, stderrData) = pipe.communicate(input=input)
     if stdoutData is not None and encoding != 'raw':
