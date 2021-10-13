@@ -22,6 +22,8 @@ PYSHELL_DEBUG = _pyshell_debug in ['yes', 'true', 'on']
 
 DEV_NULL = open('/dev/null')
 
+HOME = os.environ.get('HOME')
+
 def debug(s):
     if PYSHELL_DEBUG:
         sys.stderr.write('[DEBUG] ' + str(s) + '\n')
