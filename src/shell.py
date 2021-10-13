@@ -530,6 +530,3 @@ def createTee(files, bufferSize=128):
         p.start()
         return os.fdopen(pWrite,'w')
 
-if __name__ == "__main__":
-    import doctest
-    doctest.testmod(verbose=False)

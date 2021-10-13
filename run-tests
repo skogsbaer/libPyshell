@@ -1,0 +1,4 @@
+#!/bin/bash
+
+pushd src
+python3 shellTests.py
