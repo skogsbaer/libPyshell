@@ -16,13 +16,16 @@ import shutil
 import types
 import fnmatch
 import shutil
+from threading import Thread
+import traceback
 
 _pyshell_debug = os.environ.get('PYSHELL_DEBUG', 'no').lower()
 PYSHELL_DEBUG = _pyshell_debug in ['yes', 'true', 'on']
 
-DEV_NULL = open('/dev/null')
-
-HOME = os.environ.get('HOME')
+try:
+    DEV_NULL = open('/dev/null')
+except:
+    DEV_NULL = open('nul')
 
 def debug(s):
     if PYSHELL_DEBUG:
@@ -254,6 +257,7 @@ THIS_DIR = os.path.dirname(os.path.realpath(sys.argv[0]))
 basename = os.path.basename
 filename = os.path.basename
 dirname = os.path.dirname
+abspath = os.path.abspath
 
 exists = os.path.exists
 
@@ -280,20 +284,32 @@ expandEnvVars = os.path.expandvars
 pjoin = os.path.join
 mv = os.rename
 
+def removeFile(path):
+    if isFile(path):
+        os.remove(path)
+
 def cp(src, target):
-    if isDir(target):
-        fname = basename(src)
-        targetfile = pjoin(target, fname)
+    if isFile(src):
+        if isDir(target):
+            fname = basename(src)
+            targetfile = pjoin(target, fname)
+        else:
+            targetfile = target
+        return shutil.copyfile(src, targetfile)
     else:
-        targetfile = target
-    return shutil.copyfile(src, targetfile)
+        if isDir(target):
+            name = basename(src)
+            targetDir = pjoin(target, name)
+            return shutil.copytree(src, targetDir)
+        else:
+            raise ValueError(f'Cannot copy directory {src} to non-directory {target}')
 
 def abort(msg):
     sys.stderr.write('ERROR: ' + msg + '\n')
     sys.exit(1)
 
-def mkdir(d, mode=0o777, create_parents=False):
-    if create_parents:
+def mkdir(d, mode=0o777, createParents=False):
+    if createParents:
         os.makedirs(d, mode)
     else:
         os.mkdir(d, mode)
@@ -389,10 +405,11 @@ def mkTempDir(suffix='', prefix='tmp', dir=None, deleteAtExit=True):
     return d
 
 class tempDir:
-    def __init__(self, suffix='', prefix='tmp', dir=None):
+    def __init__(self, suffix='', prefix='tmp', dir=None, onException=True):
         self.suffix = suffix
         self.prefix = prefix
         self.dir = dir
+        self.onException = onException
     def __enter__(self):
         self.dir_to_delete = mkTempDir(suffix=self.suffix,
                                        prefix=self.prefix,
@@ -400,13 +417,15 @@ class tempDir:
                                        deleteAtExit=False)
         return self.dir_to_delete
     def __exit__(self, exc_type, value, traceback):
+        if exc_type is not None and not self.onException:
+            return False # reraise
         rmdir(self.dir_to_delete, recursive=True)
         return False # reraise expection
 
 def ls(d, *globs):
     """
-    >>> ls('../src/', '*.py', '*')
-    ['../src/shell.py']
+    >>> '../src/shell.py' in ls('../src/', '*.py', '*')
+    True
     """
     res = []
     if not d:
@@ -417,6 +436,99 @@ def ls(d, *globs):
                 res.append(os.path.join(d, f))
                 break
     return res
+
+def readBinaryFile(name):
+    with open(name, 'rb') as f:
+        return f.read()
+
+def readFile(name):
+    with open(name, 'r', encoding='utf-8') as f:
+        return f.read()
+
+def writeFile(name, content):
+    with open(name, 'w', encoding='utf-8') as f:
+        f.write(content)
+
+def writeBinaryFile(name, content):
+    with open(name, 'wb') as f:
+        f.write(content)
+
+def _openForTee(x):
+    if type(x) == str:
+        return open(x, 'wb')
+    elif type(x) == tuple:
+        (name, mode) = x
+        if mode == 'w':
+            return open(name, 'wb')
+        elif mode == 'a':
+            return open(name, 'wa')
+        raise ValueError(f'Bad mode: {mode}')
+    elif x == TEE_STDERR:
+        return sys.stderr
+    elif x == TEE_STDOUT:
+        return sys.stdout
+    else:
+        raise ValueError(f'Invalid file argument: {x}')
+
+def _teeChildWorker(pRead, pWrite, fileNames, bufferSize):
+    debug('child of tee started')
+    files = []
+    try:
+        for x in fileNames:
+            files.append(_openForTee(x))
+        bytes = os.read(pRead, bufferSize)
+        while(bytes):
+            for f in files:
+                if f is sys.stderr or f is sys.stdout:
+                    data = bytes.decode('utf8', errors='replace')
+                else:
+                    data = bytes
+                f.write(data)
+                f.flush()
+                debug(f'Wrote {data} to {f}')
+            bytes = os.read(pRead, bufferSize)
+    except Exception as e:
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
+        sys.stderr.write(f'ERROR: tee failed with an exception: {e}\n')
+        for l in lines:
+            sys.stderr.write(l)
+    finally:
+        for f in files:
+            if f is not sys.stderr and f is not sys.stdout:
+                try:
+                    debug(f'closing {f}')
+                    f.close()
+                except:
+                    pass
+            debug(f'Closed {f}')
+        debug('child of tee finished')
+
+def _teeChild(pRead, pWrite, files, bufferSize):
+    try:
+        _teeChildWorker(pRead, pWrite, files, bufferSize)
+    except:
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
+        print(''.join('BUG in shell.py ' + line for line in lines))
+
+TEE_STDOUT = object()
+TEE_STDERR = object()
+
+def createTee(files, bufferSize=128):
+        """Get a file object that will mirror writes across multiple files objs
+        Parameters:
+            files       A list where each element is one of the following:
+                        - A file name, to be opened for writing
+                        - A pair of (fileName, mode), where mode is 'w' or 'a'
+                        - One of the constants TEE_STDOUT or TEE_STDERR
+            bufferSize   Control the size of the buffer between writes to the
+                         resulting file object and the list of files.
+        """
+        pRead, pWrite = os.pipe()
+        p = Thread(target=_teeChild, args=(pRead, pWrite, files, bufferSize))
+        p.start()
+        return os.fdopen(pWrite,'w')
 
 if __name__ == "__main__":
     import doctest
