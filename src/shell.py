@@ -22,6 +22,8 @@ import traceback
 _pyshell_debug = os.environ.get('PYSHELL_DEBUG', 'no').lower()
 PYSHELL_DEBUG = _pyshell_debug in ['yes', 'true', 'on']
 
+HOME = os.environ.get('HOME')
+
 try:
     DEV_NULL = open('/dev/null')
 except:
@@ -529,4 +531,3 @@ def createTee(files, bufferSize=128):
         p = Thread(target=_teeChild, args=(pRead, pWrite, files, bufferSize))
         p.start()
         return os.fdopen(pWrite,'w')
-
