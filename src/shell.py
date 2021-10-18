@@ -312,7 +312,7 @@ def abort(msg):
 
 def mkdir(d, mode=0o777, createParents=False):
     if createParents:
-        os.makedirs(d, mode)
+        os.makedirs(d, mode, exist_ok=True)
     else:
         os.mkdir(d, mode)
 
