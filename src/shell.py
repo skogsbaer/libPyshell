@@ -316,6 +316,9 @@ def mkdir(d, mode=0o777, createParents=False):
     else:
         os.mkdir(d, mode)
 
+def touch(path):
+    run(['touch', path])
+
 def cd(x):
     debug('Changing directory to ' + x)
     os.chdir(x)
