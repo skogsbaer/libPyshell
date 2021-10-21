@@ -436,10 +436,13 @@ def ls(d, *globs):
     if not d:
         d = '.'
     for f in os.listdir(d):
-        for g in globs:
-            if fnmatch.fnmatch(f, g):
-                res.append(os.path.join(d, f))
-                break
+        if len(globs) == 0:
+            res.append(os.path.join(d, f))
+        else:
+            for g in globs:
+                if fnmatch.fnmatch(f, g):
+                    res.append(os.path.join(d, f))
+                    break
     return res
 
 def readBinaryFile(name):
