@@ -129,7 +129,10 @@ def run(cmd,
         stderrToStdout=False,
         cwd=None,
         env=None,
-        freshEnv=None
+        freshEnv=None,
+        decodeErrors='replace',
+        decodeErrorsStdout=None,
+        decodeErrorsStderr=None
         ):
     """Run the given command.
 
@@ -151,6 +154,9 @@ def run(cmd,
         then the raw bytes are passed/returned.
       env: additional environment variables
       freshEnv: completely fresh environment
+      decodeErrors: how to handle decoding errors on stdout and stderr
+      decodeErrorsStdout, decodeErrorsStderr: overwrite the value of decodeErrors for stdout
+        or stderr
     Return value:
       A `RunResult` value, given access to the captured stdout of the child process (if it was
       captured at all) and to the exit code of the child process.
@@ -180,6 +186,10 @@ def run(cmd,
     if type(cmd) == str:
         cmd = cmd.replace('\x00', ' ')
         cmd = cmd.replace('\n', ' ')
+    if decodeErrorsStdout is None:
+        decodeErrorsStdout = decodeErrors
+    if decodeErrorsStderr is None:
+        decodeErrorsStderr = decodeErrors
     stdoutIsFileLike = type(captureStdout) == int or hasattr(captureStdout, 'write')
     stdoutIsProcFun = not stdoutIsFileLike and hasattr(captureStdout, '__call__')
     shouldReturnStdout = (stdoutIsProcFun or
@@ -217,9 +227,9 @@ def run(cmd,
     )
     (stdoutData, stderrData) = pipe.communicate(input=input)
     if stdoutData is not None and encoding != 'raw':
-        stdoutData = stdoutData.decode(encoding)
+        stdoutData = stdoutData.decode(encoding, errors=decodeErrorsStdout)
     if stderrData is not None and encoding != 'raw':
-        stderrData = stderrData.decode(encoding)
+        stderrData = stderrData.decode(encoding, errors=decodeErrorsStderr)
     exitcode = pipe.returncode
     if onError == 'raise' and exitcode != 0:
         d = stderrData
