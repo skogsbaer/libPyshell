@@ -306,7 +306,7 @@ def cp(src, target):
         if isDir(target):
             name = basename(src)
             targetDir = pjoin(target, name)
-            return shutil.copytree(src, targetDir)
+            return shutil.copytree(src, targetDir, dirs_exist_ok=False)
         else:
             raise ValueError(f'Cannot copy directory {src} to non-directory {target}')
 
