@@ -115,7 +115,11 @@ def splitOn(splitter):
     return f
 
 def splitLines(s):
-    return s.strip().split('\n')
+    s = s.strip()
+    if not s:
+        return []
+    else:
+        return s.strip().split('\n')
 
 def run(cmd,
         captureStdout=False,
