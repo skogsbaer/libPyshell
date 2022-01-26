@@ -399,9 +399,9 @@ def registerAtExit(action, mode):
         debug(f'Running exit hook, exit code: {e}, mode: {mode}')
         if mode is True:
             action()
-        elif mode in ['ifSuccess'] and hooks.isExitSuccess():
+        elif mode in ['ifSuccess'] and _hooks.isExitSuccess():
             action()
-        elif mode in ['ifFailure'] and hooks.isExitFailure():
+        elif mode in ['ifFailure'] and _hooks.isExitFailure():
             action()
         else:
             debug('Not running exit action')
