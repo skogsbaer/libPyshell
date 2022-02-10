@@ -551,3 +551,6 @@ def createTee(files, bufferSize=128):
         p = Thread(target=_teeChild, args=(pRead, pWrite, files, bufferSize))
         p.start()
         return os.fdopen(pWrite,'w')
+
+exit = sys.exit
+fileSize = os.path.getsize
