@@ -165,19 +165,19 @@ def splitLines(s):
     """
     return s.strip().split('\n')
 
-def run(cmd: Union[str, list[str]],
-        onError: Literal['raise', 'die', 'ignore'] = 'raise',
-        input: Optional[str]=None,
-        encoding: str='utf-8',
-        captureStdout: Union[bool, Callable, TextIO, BinaryIO]=False,
-        captureStderr: bool=False,
-        stderrToStdout: bool=False,
-        cwd: Optional[str]=None,
-        env: Optional[dict]=None,
-        freshEnv: Optional[dict]=None,
-        decodeErrors: Literal['strict', 'ignore', 'replace']='replace',
-        decodeErrorsStdout: Optional[Literal['strict', 'ignore', 'replace']]=None,
-        decodeErrorsStderr: Optional[Literal['strict', 'ignore', 'replace']]=None
+def run(cmd,
+        onError='raise',
+        input=None,
+        encoding='utf-8',
+        captureStdout=False,
+        captureStderr=False,
+        stderrToStdout=False,
+        cwd=None,
+        env=None,
+        freshEnv=None,
+        decodeErrors='replace',
+        decodeErrorsStdout=None,
+        decodeErrorsStderr=None
         ):
     """Runs the given command.
 
