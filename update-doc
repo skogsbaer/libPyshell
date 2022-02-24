@@ -1,0 +1,3 @@
+#!/bin/bash
+
+pdoc3 src/shell.py > README.md

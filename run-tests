@@ -1,4 +1,4 @@
 #!/bin/bash
 
-pushd src
-python3 shellTests.py
+pushd tests
+PYTHONPATH=../src python3 shellTests.py

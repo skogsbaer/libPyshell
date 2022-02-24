@@ -1,6 +1,23 @@
 """
 
-A module for writing shell scripts in Python.
+A python module for writing shell-scripts in Python. It introduces
+new functionality, bundles functions distributed over several modules of
+Python's standard library in one place and provides several auxiliary functions.
+
+The function's provided by the `shell` module are named after the corresponding
+Unix commands.
+
+Here's a quick demo:
+
+~~~python
+from shell import *
+
+rm('a/b/foo.txt')
+mv('X.pdf', f'{HOME}/contents.pdf')
+
+files = ls('Documents', '*.txt', '*.c')
+magicFiles = run(['grep', 'magic'] + files, captureStdout=splitLines, onError='ignore').stdout
+~~~
 
 Assumes Python 3.
 
@@ -18,24 +35,28 @@ import fnmatch
 import shutil
 from threading import Thread
 import traceback
+from typing import *
 
 _pyshell_debug = os.environ.get('PYSHELL_DEBUG', 'no').lower()
-PYSHELL_DEBUG = _pyshell_debug in ['yes', 'true', 'on']
+_PYSHELL_DEBUG = _pyshell_debug in ['yes', 'true', 'on']
 
+#: The value of the environment variable `HOME`
 HOME = os.environ.get('HOME')
 
 try:
+    #: /dev/null
     DEV_NULL = open('/dev/null')
 except:
     DEV_NULL = open('nul')
 
 atexit.register(lambda: DEV_NULL.close())
 
-def debug(s):
-    if PYSHELL_DEBUG:
+def _debug(s):
+    if _PYSHELL_DEBUG:
         sys.stderr.write('[DEBUG] ' + str(s) + '\n')
 
 def fatal(s):
+    """Display an error message to stderr."""
     sys.stderr.write('ERROR: ' + str(s) + '\n')
 
 def resolveProg(*l):
@@ -52,18 +73,24 @@ def resolveProg(*l):
             return x
     return None
 
-def gnuProg(x):
-    prog = resolveProg('g' + x, x)
+def gnuProg(p):
+    """Get the GNU version of progam p."""
+    prog = resolveProg('g' + p, p)
     if not prog:
-        raise ShellError('Program ' + str(x) + ' not found at all')
+        raise ShellError('Program ' + str(p) + ' not found at all')
     res = run('%s --version' % prog, captureStdout=True, onError='ignore')
     if 'GNU' in res.stdout:
-        debug('Resolved program %s as %s' % (x, prog))
+        _debug('Resolved program %s as %s' % (p, prog))
         return prog
     else:
-        raise ShellError('No GNU variant found for program ' + str(x))
+        raise ShellError('No GNU variant found for program ' + str(p))
 
 class RunResult:
+    """Represents the result of running a program using the `run` function.
+    Attribute `exitcode` holds the exit code,
+    attribute `stdout` contains the output printed in stdout (only if `run`
+    was invoked with `captureStdout=True`).
+    """
     def __init__(self, stdout, exitcode):
         self.stdout = stdout
         self.exitcode = exitcode
@@ -79,12 +106,22 @@ class RunResult:
         return hash(self.__dict__)
 
 class ShellError(BaseException):
+    """The base class for exceptions thrown by this module."""
     def __init__(self, msg):
         self.msg = msg
     def __str__(self):
         return self.msg
 
 class RunError(ShellError):
+    """
+    This exception is thrown if a program invoked with `run(onError='raise')`
+    returns a non-zero exit code.
+
+    Attributes:
+
+    * `exitcode`
+    * `stderr`: output on stderr (if `run` configured to capture this output)
+    """
     def __init__(self, cmd, exitcode, stderr=None):
         self.cmd = cmd
         self.exitcode = exitcode
@@ -96,6 +133,9 @@ class RunError(ShellError):
 
 def splitOn(splitter):
     """Return a function that splits a string on the given splitter string.
+
+    To be used with the `captureStdout` or `captureStderr` parameter
+    of `run`.
 
     The function returned filters an empty string at the end of the result list.
 
@@ -117,47 +157,60 @@ def splitOn(splitter):
     return f
 
 def splitLines(s):
+    """
+    Split on line endings.
+    To be used with the `captureStdout` or `captureStderr` parameter
+    of `run`.
+    """
     return s.strip().split('\n')
 
-def run(cmd,
-        captureStdout=False,
-        onError='raise',
-        input=None,
-        encoding='utf-8',
-        stderrToStdout=False,
-        cwd=None,
-        env=None,
-        freshEnv=None,
-        decodeErrors='replace',
-        decodeErrorsStdout=None,
-        decodeErrorsStderr=None
+def run(cmd: Union[str, list[str]],
+        onError: Literal['raise', 'die', 'ignore'] = 'raise',
+        input: Optional[str]=None,
+        encoding: str='utf-8',
+        captureStdout: Union[bool, Callable, TextIO, BinaryIO]=False,
+        captureStderr: bool=False,
+        stderrToStdout: bool=False,
+        cwd: Optional[str]=None,
+        env: Optional[dict]=None,
+        freshEnv: Optional[dict]=None,
+        decodeErrors: Literal['strict', 'ignore', 'replace']='replace',
+        decodeErrorsStdout: Optional[Literal['strict', 'ignore', 'replace']]=None,
+        decodeErrorsStderr: Optional[Literal['strict', 'ignore', 'replace']]=None
         ):
-    """Run the given command.
+    """Runs the given command.
 
     Parameters:
-      cmd: the command, either a list (command with raw args)
-         or a string (subject to shell exansion)
-      captureStdout: what to do with stdout of the child process. Possible values:
+
+    * `cmd`: the command, either a list (command with raw args)
+         or a string (subject to shell expansion)
+    * `onError`: what to do if the child process finishes with an exit code different from 0
+        * 'raise': raise an exception (the default)
+        * 'die': terminate the whole process
+        * 'ignore'
+    * `input`: string that is send to the stdin of the child process.
+    * `encoding`: the encoding for stdin, stdout, and stderr. If `encoding == 'raw'`,
+        then the raw bytes are passed/returned.
+    * `captureStdout` and `captureStderr`: what to do with stdout/stderr of the child process. Possible values:
         * False: stdout is not captured and goes to stdout of the parent process (the default)
         * True: stdout is captured and returned
         * A function: stdout is captured and the result of applying the function to the captured
           output is returned. Use splitLines as this function to split the output into lines
         * An existing file descriptor or a file object: stdout goes to the file descriptor or file
-      onError: what to do if the child process finishes with an exit code different from 0
-        * 'raise': raise an exception (the default)
-        * 'die': terminate the whole process
-        * 'ignore'
-      input: string that is send to the stdin of the child process.
-      encoding: the encoding for stdin and stdout. If encoding == 'raw',
-        then the raw bytes are passed/returned.
-      env: additional environment variables
-      freshEnv: completely fresh environment
-      decodeErrors: how to handle decoding errors on stdout and stderr
-      decodeErrorsStdout, decodeErrorsStderr: overwrite the value of decodeErrors for stdout
+    * `cwd`: working directory
+    * `env`: dictionary with additional environment variables.
+    * `freshEnv`: dictionary with a completely fresh environment.
+    * `decodeErrors`: how to handle decoding errors on stdout and stderr.
+    * `decodeErrorsStdout` and `decodeErrorsStderr`: overwrite the value of decodeErrors for stdout
         or stderr
-    Return value:
-      A `RunResult` value, given access to the captured stdout of the child process (if it was
+
+    Returns:
+      a `RunResult` value, given access to the captured stdout of the child process (if it was
       captured at all) and to the exit code of the child process.
+
+    Raises: a `RunError` if `onError='raise'` and the command terminates with a non-zero exit code.
+
+    Starting with Python 3.5, the `subprocess` module defines a similar function.
 
     >>> run('/bin/echo foo') == RunResult(exitcode=0, stdout='')
     True
@@ -203,12 +256,14 @@ def run(cmd,
     stderr = None
     if stderrToStdout:
         stderr = subprocess.STDOUT
+    elif captureStderr:
+        stderr = subprocess.PIPE
     input_str = 'None'
     if input:
         input_str = '<' + str(len(input)) + ' characters>'
         if encoding != 'raw':
             input = input.encode(encoding)
-    debug('Running command ' + repr(cmd) + ' with captureStdout=' + str(captureStdout) +
+    _debug('Running command ' + repr(cmd) + ' with captureStdout=' + str(captureStdout) +
           ', onError=' + onError + ', input=' + input_str)
     popenEnv = None
     if env:
@@ -247,7 +302,7 @@ def run(cmd,
 # the quote function is stolen from https://hg.python.org/cpython/file/3.5/Lib/shlex.py
 _find_unsafe = re.compile(r'[^\w@%+=:,./-]').search
 def quote(s):
-    """Return a shell-escaped version of the string *s*.
+    """Return a shell-escaped version of the string `s`.
     """
     if not s:
         return "''"
@@ -258,51 +313,94 @@ def quote(s):
     return "'" + s.replace("'", "'\"'\"'") + "'"
 
 def listAsArgs(l):
+    """
+    Converts a list of command arguments to a single argument string.
+    """
     return ' '.join([quote(x) for x in l])
 
 def mergeDicts(*l):
+    """
+    Merges a list of dictionaries. Useful for e.g. merging environment dictionaries.
+    """
     res = {}
     for d in l:
         res.update(d)
     return res
 
+#: The directory where the script is located.
 THIS_DIR = os.path.dirname(os.path.realpath(sys.argv[0]))
 
+#: export
 basename = os.path.basename
+
+#: export
 filename = os.path.basename
+
+#: export
 dirname = os.path.dirname
+
+#: export
 abspath = os.path.abspath
 
+#: export
 exists = os.path.exists
 
 isfile = os.path.isfile # DEPRECATED
+
+#: export
 isFile = os.path.isfile
 
 isdir = os.path.isdir # DEPRECATED
+
+#: export
 isDir = os.path.isdir
 
 islink = os.path.islink # DEPRECATED
+
+#: export
 isLink = os.path.islink
 
 splitext = os.path.splitext # DEPRECATED
+
+#: export
 splitExt = os.path.splitext
 
 def removeExt(p):
+    """Removes the extension of a filename."""
     return splitext(p)[0]
 
 def getExt(p):
+    """Returns the extension of a filename."""
     return splitext(p)[1]
 
+#: export
 expandEnvVars = os.path.expandvars
 
+#: export
 pjoin = os.path.join
+
+#: export
 mv = os.rename
 
 def removeFile(path):
+    """
+    Removes the given file. Throws an error if `path` is not a file.
+    """
     if isFile(path):
         os.remove(path)
+    else:
+        raise ShellError(f"{path} is not a file")
 
 def cp(src, target):
+    """
+    Copy `src` to `target`.
+
+    * If `src` is a file and `target` is a file: overwrites `target`.
+    * If `src` is a file and `target` is a dirname: places the copy in directory `target`,
+      with the name of `src.
+    * If `src` is a directory then `target` must also be a directory: copies
+      the whole `src` directory to `target`.
+    """
     if isFile(src):
         if isDir(target):
             fname = basename(src)
@@ -319,26 +417,46 @@ def cp(src, target):
             raise ValueError(f'Cannot copy directory {src} to non-directory {target}')
 
 def abort(msg):
+    """Print an error message and abort the shell script."""
     sys.stderr.write('ERROR: ' + msg + '\n')
     sys.exit(1)
 
 def mkdir(d, mode=0o777, createParents=False):
+    """
+    Creates directory `d` with `mode`.
+    """
     if createParents:
         os.makedirs(d, mode, exist_ok=True)
     else:
         os.mkdir(d, mode)
 
 def touch(path):
+    """
+    Create an empty file at `path`.
+    """
     run(['touch', path])
 
 def cd(x):
-    debug('Changing directory to ' + x)
+    """Changes the working directory."""
+    _debug('Changing directory to ' + x)
     os.chdir(x)
 
 def pwd():
+    """
+    Return the current working directory.
+    """
     return os.getcwd()
 
 class workingDir:
+    """
+    Scoped change of working directory, to be used in a `with`-block:
+
+    ```
+    with workingDir(path):
+        # working directory is now path
+    # previous working directory is restored
+    ```
+    """
     def __init__(self, new_dir):
         self.new_dir = new_dir
     def __enter__(self):
@@ -349,16 +467,22 @@ class workingDir:
         return False # reraise expection
 
 def rm(path):
+    """
+    Remove the file at `path`.
+    """
     os.remove(path)
 
 def rmdir(d, recursive=False):
+    """
+    Remove directory `d`. Set `recursive=True` if the directory is not empty.
+    """
     if recursive:
         shutil.rmtree(d)
     else:
         os.rmdir(d)
 
 # See https://stackoverflow.com/questions/9741351/how-to-find-exit-code-or-reason-when-atexit-callback-is-called-in-python
-class ExitHooks(object):
+class _ExitHooks(object):
     def __init__(self):
         self.exitCode = None
         self.exception = None
@@ -389,12 +513,12 @@ class ExitHooks(object):
     def isExitFailure(self):
         return not self.isExitSuccess()
 
-_hooks = ExitHooks()
+_hooks = _ExitHooks()
 _hooks.hook()
 
-def registerAtExit(action, mode):
+def _registerAtExit(action, mode):
     def f():
-        debug(f'Running exit hook, exit code: {e}, mode: {mode}')
+        _debug(f'Running exit hook, exit code: {e}, mode: {mode}')
         if mode is True:
             action()
         elif mode in ['ifSuccess'] and _hooks.isExitSuccess():
@@ -402,26 +526,49 @@ def registerAtExit(action, mode):
         elif mode in ['ifFailure'] and _hooks.isExitFailure():
             action()
         else:
-            debug('Not running exit action')
+            _debug('Not running exit action')
     atexit.register(f)
 
-# deleteAtExit is one of the following:
-# - True: the file is deleted unconditionally
-# - 'ifSuccess': the file is deleted if the program exists with code 0
-# - 'ifFailure': the file is deleted if the program exists with code != 0
 def mkTempFile(suffix='', prefix='', dir=None, deleteAtExit=True):
+    """Create a temporary file.
+
+    `deleteAtExit` controls if and how the file is deleted once the shell sript terminates.
+   It has one of the following values.
+
+    * True: the file is deleted unconditionally on exit.
+    * 'ifSuccess': the file is deleted if the program exists with code 0
+    * 'ifFailure': the file is deleted if the program exists with code != 0
+    """
+
+
     f = tempfile.mktemp(suffix, prefix, dir)
     if deleteAtExit:
-        registerAtExit(lambda: rm(f), deleteAtExit)
+        _registerAtExit(lambda: rm(f), deleteAtExit)
     return f
 
 def mkTempDir(suffix='', prefix='tmp', dir=None, deleteAtExit=True):
+    """Create a temporary directory. The `deleteAtExit` parameter
+    has the same meaning as for `mkTempFile`.
+    """
     d = tempfile.mkdtemp(suffix, prefix, dir)
     if deleteAtExit:
-        registerAtExit(lambda: rmdir(d, True), deleteAtExit)
+        _registerAtExit(lambda: rmdir(d, True), deleteAtExit)
     return d
 
 class tempDir:
+    """
+    Scoped creation of a temporary directory, to be used in a `with`-block:
+
+    ```
+    with tempDir() as d:
+        # do something with d
+    # d gets deleted at the end of the with-block
+    ```
+
+    Per default, the temporary directory is deleted at the end of the `with`-block.
+    With `delete=False`, deletion is deactivated. With `onException=False`, deletion
+    is only performed if the `with`-block finishes without an exception.
+    """
     def __init__(self, suffix='', prefix='tmp', dir=None, onException=True, delete=True):
         self.suffix = suffix
         self.prefix = prefix
@@ -443,7 +590,13 @@ class tempDir:
 
 def ls(d, *globs):
     """
-    >>> '../src/shell.py' in ls('../src/', '*.py', '*')
+    Returns a list of pathnames contained in `d`, matching any of the the given `globs`.
+
+    If no globs are given, all files are returned.
+
+    The pathnames in the result list contain the directory part `d`.
+
+    >>> '../src/shell.py' in ls('../src/', '*.py', '*.txt')
     True
     """
     res = []
@@ -460,18 +613,22 @@ def ls(d, *globs):
     return res
 
 def readBinaryFile(name):
+    """Return the binary content of file `name`."""
     with open(name, 'rb') as f:
         return f.read()
 
 def readFile(name):
+    """Return the textual content of file `name`."""
     with open(name, 'r', encoding='utf-8') as f:
         return f.read()
 
 def writeFile(name, content):
+    """Write text `content` to file `name`."""
     with open(name, 'w', encoding='utf-8') as f:
         f.write(content)
 
 def writeBinaryFile(name, content):
+    """Write binary string `content` to file `name`."""
     with open(name, 'wb') as f:
         f.write(content)
 
@@ -493,7 +650,7 @@ def _openForTee(x):
         raise ValueError(f'Invalid file argument: {x}')
 
 def _teeChildWorker(pRead, pWrite, fileNames, bufferSize):
-    debug('child of tee started')
+    _debug('child of tee started')
     files = []
     try:
         for x in fileNames:
@@ -507,7 +664,7 @@ def _teeChildWorker(pRead, pWrite, fileNames, bufferSize):
                     data = bytes
                 f.write(data)
                 f.flush()
-                debug(f'Wrote {data} to {f}')
+                _debug(f'Wrote {data} to {f}')
             bytes = os.read(pRead, bufferSize)
     except Exception as e:
         exc_type, exc_value, exc_traceback = sys.exc_info()
@@ -519,12 +676,12 @@ def _teeChildWorker(pRead, pWrite, fileNames, bufferSize):
         for f in files:
             if f is not sys.stderr and f is not sys.stdout:
                 try:
-                    debug(f'closing {f}')
+                    _debug(f'closing {f}')
                     f.close()
                 except:
                     pass
-            debug(f'Closed {f}')
-        debug('child of tee finished')
+            _debug(f'Closed {f}')
+        _debug('child of tee finished')
 
 def _teeChild(pRead, pWrite, files, bufferSize):
     try:
@@ -534,23 +691,39 @@ def _teeChild(pRead, pWrite, files, bufferSize):
         lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
         print(''.join('BUG in shell.py ' + line for line in lines))
 
+#: Special value for `createTee`.
 TEE_STDOUT = object()
+
+#: Special value for `createTee`.
 TEE_STDERR = object()
 
 def createTee(files, bufferSize=128):
-        """Get a file object that will mirror writes across multiple files objs
+        """Get a file object that will mirror writes across multiple files.
+        The result can be used for the `captureStdout` or `captureStderr` parameter
+        of `run` to mimic the behavior of the `tee` command.
+
         Parameters:
-            files       A list where each element is one of the following:
-                        - A file name, to be opened for writing
-                        - A pair of (fileName, mode), where mode is 'w' or 'a'
-                        - One of the constants TEE_STDOUT or TEE_STDERR
-            bufferSize   Control the size of the buffer between writes to the
+
+        * `files`: A list where each element is one of the following:
+             * A file name, to be opened for writing
+             * A pair `(fileName, mode)`, where mode is `'w'` or `'a'`
+             * One of the constants `TEE_STDOUT` or `TEE_STDERR`. Output then goes
+               to stdout/stderr.
+
+        *  `bufferSize`:   Control the size of the buffer between writes to the
                          resulting file object and the list of files.
+
+        Result: a file-like object
         """
         pRead, pWrite = os.pipe()
         p = Thread(target=_teeChild, args=(pRead, pWrite, files, bufferSize))
         p.start()
         return os.fdopen(pWrite,'w')
 
-exit = sys.exit
+def exit(code):
+    """Exit the program with the given exit `code`.
+    """
+    sys.exit(code)
+
+#: export
 fileSize = os.path.getsize
