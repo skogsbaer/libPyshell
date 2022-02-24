@@ -18,7 +18,11 @@ class ShellTest(unittest.TestCase):
             self.assertEqual('Hello World!', s2)
 
 if __name__ == "__main__":
+    print("Running doctests")
     import doctest
-    doctest.testmod(m=shell, verbose=False)
+    r = doctest.testmod(m=shell, verbose=False)
+    if r.failed > 0:
+        print('At least one doctest failed')
+        sys.exit(1)
     print("Running unittests")
     unittest.main(argv=['unused'], exit=True)
