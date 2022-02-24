@@ -29,6 +29,8 @@ try:
 except:
     DEV_NULL = open('nul')
 
+atexit.register(lambda: DEV_NULL.close())
+
 def debug(s):
     if PYSHELL_DEBUG:
         sys.stderr.write('[DEBUG] ' + str(s) + '\n')
@@ -115,11 +117,7 @@ def splitOn(splitter):
     return f
 
 def splitLines(s):
-    s = s.strip()
-    if not s:
-        return []
-    else:
-        return s.strip().split('\n')
+    return s.strip().split('\n')
 
 def run(cmd,
         captureStdout=False,
@@ -316,7 +314,7 @@ def cp(src, target):
         if isDir(target):
             name = basename(src)
             targetDir = pjoin(target, name)
-            return shutil.copytree(src, targetDir, dirs_exist_ok=False)
+            return shutil.copytree(src, targetDir)
         else:
             raise ValueError(f'Cannot copy directory {src} to non-directory {target}')
 
@@ -396,7 +394,7 @@ _hooks.hook()
 
 def registerAtExit(action, mode):
     def f():
-        debug(f'Running exit hook, mode: {mode}')
+        debug(f'Running exit hook, exit code: {e}, mode: {mode}')
         if mode is True:
             action()
         elif mode in ['ifSuccess'] and _hooks.isExitSuccess():
@@ -424,11 +422,12 @@ def mkTempDir(suffix='', prefix='tmp', dir=None, deleteAtExit=True):
     return d
 
 class tempDir:
-    def __init__(self, suffix='', prefix='tmp', dir=None, onException=True):
+    def __init__(self, suffix='', prefix='tmp', dir=None, onException=True, delete=True):
         self.suffix = suffix
         self.prefix = prefix
         self.dir = dir
         self.onException = onException
+        self.delete = delete
     def __enter__(self):
         self.dir_to_delete = mkTempDir(suffix=self.suffix,
                                        prefix=self.prefix,
@@ -438,7 +437,8 @@ class tempDir:
     def __exit__(self, exc_type, value, traceback):
         if exc_type is not None and not self.onException:
             return False # reraise
-        rmdir(self.dir_to_delete, recursive=True)
+        if self.delete:
+            rmdir(self.dir_to_delete, recursive=True)
         return False # reraise expection
 
 def ls(d, *globs):
