@@ -21,4 +21,4 @@ magicFiles = run(['grep', 'magic'] + files, captureStdout=splitLines, onError='i
 
 Assumes Python 3.
 
-[API documentation](https://github.com/skogsbaer/libPyshell/doc/shell.html)
+[API documentation](https://htmlpreview.github.io/?https://github.com/skogsbaer/libPyshell/blob/main/doc/shell.html)

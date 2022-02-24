@@ -19,7 +19,8 @@ files = ls('Documents', '*.txt', '*.c')
 magicFiles = run(['grep', 'magic'] + files, captureStdout=splitLines, onError='ignore').stdout
 ~~~
 
-Assumes Python 3.
+* Requirements: Python 3.
+* [Homepage](https://github.com/skogsbaer/libPyshell)
 
 """
 import os

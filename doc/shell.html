@@ -38,7 +38,10 @@ mv('X.pdf', f'{HOME}/contents.pdf')
 files = ls('Documents', '*.txt', '*.c')
 magicFiles = run(['grep', 'magic'] + files, captureStdout=splitLines, onError='ignore').stdout
 </code></pre>
-<p>Assumes Python 3.</p>
+<ul>
+<li>Requirements: Python 3.</li>
+<li><a href="https://github.com/skogsbaer/libPyshell">Homepage</a></li>
+</ul>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -64,7 +67,8 @@ files = ls(&#39;Documents&#39;, &#39;*.txt&#39;, &#39;*.c&#39;)
 magicFiles = run([&#39;grep&#39;, &#39;magic&#39;] + files, captureStdout=splitLines, onError=&#39;ignore&#39;).stdout
 ~~~
 
-Assumes Python 3.
+* Requirements: Python 3.
+* [Homepage](https://github.com/skogsbaer/libPyshell)
 
 &#34;&#34;&#34;
 import os
