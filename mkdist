@@ -1,0 +1,16 @@
+#!/bin/bash
+
+echo "Version to build:"
+grep ^VERSION setup.py
+echo
+
+echo "Is this the right version number?"
+echo "Did you commit all your changes?"
+echo "Did you create a git tag?"
+echo "Hit ENTER to continue!"
+read
+
+rm -rf dist/
+python3 -m build || exit 1
+
+echo "To upload the package to PyPI, execute the following command: twine upload dist/*"

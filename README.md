@@ -19,6 +19,7 @@ files = ls('Documents', '*.txt', '*.c')
 magicFiles = run(['grep', 'magic'] + files, captureStdout=splitLines, onError='ignore').stdout
 ~~~
 
-Assumes Python 3.
-
-[API documentation](https://htmlpreview.github.io/?https://github.com/skogsbaer/libPyshell/blob/main/doc/shell.html)
+* Requirements: Python 3
+* [API documentation](https://htmlpreview.github.io/?https://github.com/skogsbaer/libPyshell/blob/main/doc/shell.html)
+* [PyPI page](https://pypi.org/project/libPyshell/)
+* Installation: `pip install libPyshell`
