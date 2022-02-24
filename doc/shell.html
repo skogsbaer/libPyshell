@@ -1,0 +1,2187 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.10.0" />
+<title>shell API documentation</title>
+<meta name="description" content="A python module for writing shell-scripts in Python. It introduces
+new functionality, bundles functions distributed over several modules of
+Python&#39;s …" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>shell</code></h1>
+</header>
+<section id="section-intro">
+<p>A python module for writing shell-scripts in Python. It introduces
+new functionality, bundles functions distributed over several modules of
+Python's standard library in one place and provides several auxiliary functions.</p>
+<p>The function's provided by the <code><a title="shell" href="#shell">shell</a></code> module are named after the corresponding
+Unix commands.</p>
+<p>Here's a quick demo:</p>
+<pre><code class="language-python">from shell import *
+
+rm('a/b/foo.txt')
+mv('X.pdf', f'{HOME}/contents.pdf')
+
+files = ls('Documents', '*.txt', '*.c')
+magicFiles = run(['grep', 'magic'] + files, captureStdout=splitLines, onError='ignore').stdout
+</code></pre>
+<p>Assumes Python 3.</p>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">&#34;&#34;&#34;
+
+A python module for writing shell-scripts in Python. It introduces
+new functionality, bundles functions distributed over several modules of
+Python&#39;s standard library in one place and provides several auxiliary functions.
+
+The function&#39;s provided by the `shell` module are named after the corresponding
+Unix commands.
+
+Here&#39;s a quick demo:
+
+~~~python
+from shell import *
+
+rm(&#39;a/b/foo.txt&#39;)
+mv(&#39;X.pdf&#39;, f&#39;{HOME}/contents.pdf&#39;)
+
+files = ls(&#39;Documents&#39;, &#39;*.txt&#39;, &#39;*.c&#39;)
+magicFiles = run([&#39;grep&#39;, &#39;magic&#39;] + files, captureStdout=splitLines, onError=&#39;ignore&#39;).stdout
+~~~
+
+Assumes Python 3.
+
+&#34;&#34;&#34;
+import os
+import os.path
+import subprocess
+import re
+import sys
+import atexit
+import tempfile
+import shutil
+import types
+import fnmatch
+import shutil
+from threading import Thread
+import traceback
+from typing import *
+
+_pyshell_debug = os.environ.get(&#39;PYSHELL_DEBUG&#39;, &#39;no&#39;).lower()
+_PYSHELL_DEBUG = _pyshell_debug in [&#39;yes&#39;, &#39;true&#39;, &#39;on&#39;]
+
+#: The value of the environment variable `HOME`
+HOME = os.environ.get(&#39;HOME&#39;)
+
+try:
+    #: /dev/null
+    DEV_NULL = open(&#39;/dev/null&#39;)
+except:
+    DEV_NULL = open(&#39;nul&#39;)
+
+atexit.register(lambda: DEV_NULL.close())
+
+def _debug(s):
+    if _PYSHELL_DEBUG:
+        sys.stderr.write(&#39;[DEBUG] &#39; + str(s) + &#39;\n&#39;)
+
+def fatal(s):
+    &#34;&#34;&#34;Display an error message to stderr.&#34;&#34;&#34;
+    sys.stderr.write(&#39;ERROR: &#39; + str(s) + &#39;\n&#39;)
+
+def resolveProg(*l):
+    &#34;&#34;&#34;Return the first program in the list that exist and is runnable.
+    &gt;&gt;&gt; resolveProg()
+    &gt;&gt;&gt; resolveProg(&#39;foobarbaz&#39;, &#39;python&#39;, &#39;grep&#39;)
+    &#39;python&#39;
+    &gt;&gt;&gt; resolveProg(&#39;foobarbaz&#39;, &#39;padauz&#39;)
+    &#34;&#34;&#34;
+    for x in l:
+        ecode = run(&#39;command -v %s&#39; % quote(x), captureStdout=DEV_NULL,
+                    onError=&#39;ignore&#39;).exitcode
+        if ecode == 0:
+            return x
+    return None
+
+def gnuProg(p):
+    &#34;&#34;&#34;Get the GNU version of progam p.&#34;&#34;&#34;
+    prog = resolveProg(&#39;g&#39; + p, p)
+    if not prog:
+        raise ShellError(&#39;Program &#39; + str(p) + &#39; not found at all&#39;)
+    res = run(&#39;%s --version&#39; % prog, captureStdout=True, onError=&#39;ignore&#39;)
+    if &#39;GNU&#39; in res.stdout:
+        _debug(&#39;Resolved program %s as %s&#39; % (p, prog))
+        return prog
+    else:
+        raise ShellError(&#39;No GNU variant found for program &#39; + str(p))
+
+class RunResult:
+    &#34;&#34;&#34;Represents the result of running a program using the `run` function.
+    Attribute `exitcode` holds the exit code,
+    attribute `stdout` contains the output printed in stdout (only if `run`
+    was invoked with `captureStdout=True`).
+    &#34;&#34;&#34;
+    def __init__(self, stdout, exitcode):
+        self.stdout = stdout
+        self.exitcode = exitcode
+    def __repr__(self):
+        return &#39;RunResult(exitcode=%d, stdout=%r) &#39;% (self.exitcode, self.stdout)
+    def __eq__(self, other):
+        if type(other) is type(self):
+            return self.__dict__ == other.__dict__
+        return False
+    def __ne__(self, other):
+        return not self.__eq__(other)
+    def __hash__(self):
+        return hash(self.__dict__)
+
+class ShellError(BaseException):
+    &#34;&#34;&#34;The base class for exceptions thrown by this module.&#34;&#34;&#34;
+    def __init__(self, msg):
+        self.msg = msg
+    def __str__(self):
+        return self.msg
+
+class RunError(ShellError):
+    &#34;&#34;&#34;
+    This exception is thrown if a program invoked with `run(onError=&#39;raise&#39;)`
+    returns a non-zero exit code.
+
+    Attributes:
+
+    * `exitcode`
+    * `stderr`: output on stderr (if `run` configured to capture this output)
+    &#34;&#34;&#34;
+    def __init__(self, cmd, exitcode, stderr=None):
+        self.cmd = cmd
+        self.exitcode = exitcode
+        self.stderr = stderr
+        msg = &#39;Command &#39; + repr(self.cmd) + &#34; failed with exit code &#34; + str(self.exitcode)
+        if stderr:
+            msg = msg + &#39;\nstderr:\n&#39; + str(stderr)
+        super(RunError, self).__init__(msg)
+
+def splitOn(splitter):
+    &#34;&#34;&#34;Return a function that splits a string on the given splitter string.
+
+    To be used with the `captureStdout` or `captureStderr` parameter
+    of `run`.
+
+    The function returned filters an empty string at the end of the result list.
+
+    &gt;&gt;&gt; splitOn(&#39;X&#39;)(&#34;aXbXcX&#34;)
+    [&#39;a&#39;, &#39;b&#39;, &#39;c&#39;]
+    &gt;&gt;&gt; splitOn(&#39;X&#39;)(&#34;aXbXc&#34;)
+    [&#39;a&#39;, &#39;b&#39;, &#39;c&#39;]
+    &gt;&gt;&gt; splitOn(&#39;X&#39;)(&#34;abc&#34;)
+    [&#39;abc&#39;]
+    &gt;&gt;&gt; splitOn(&#39;X&#39;)(&#34;abcX&#34;)
+    [&#39;abc&#39;]
+    &#34;&#34;&#34;
+    def f(s):
+        l = s.split(splitter)
+        if l and not l[-1]:
+            return l[:-1]
+        else:
+            return l
+    return f
+
+def splitLines(s):
+    &#34;&#34;&#34;
+    Split on line endings.
+    To be used with the `captureStdout` or `captureStderr` parameter
+    of `run`.
+    &#34;&#34;&#34;
+    return s.strip().split(&#39;\n&#39;)
+
+def run(cmd: Union[str, list[str]],
+        onError: Literal[&#39;raise&#39;, &#39;die&#39;, &#39;ignore&#39;] = &#39;raise&#39;,
+        input: Optional[str]=None,
+        encoding: str=&#39;utf-8&#39;,
+        captureStdout: Union[bool, Callable, TextIO, BinaryIO]=False,
+        captureStderr: bool=False,
+        stderrToStdout: bool=False,
+        cwd: Optional[str]=None,
+        env: Optional[dict]=None,
+        freshEnv: Optional[dict]=None,
+        decodeErrors: Literal[&#39;strict&#39;, &#39;ignore&#39;, &#39;replace&#39;]=&#39;replace&#39;,
+        decodeErrorsStdout: Optional[Literal[&#39;strict&#39;, &#39;ignore&#39;, &#39;replace&#39;]]=None,
+        decodeErrorsStderr: Optional[Literal[&#39;strict&#39;, &#39;ignore&#39;, &#39;replace&#39;]]=None
+        ):
+    &#34;&#34;&#34;Runs the given command.
+
+    Parameters:
+
+    * `cmd`: the command, either a list (command with raw args)
+         or a string (subject to shell expansion)
+    * `onError`: what to do if the child process finishes with an exit code different from 0
+        * &#39;raise&#39;: raise an exception (the default)
+        * &#39;die&#39;: terminate the whole process
+        * &#39;ignore&#39;
+    * `input`: string that is send to the stdin of the child process.
+    * `encoding`: the encoding for stdin, stdout, and stderr. If `encoding == &#39;raw&#39;`,
+        then the raw bytes are passed/returned.
+    * `captureStdout` and `captureStderr`: what to do with stdout/stderr of the child process. Possible values:
+        * False: stdout is not captured and goes to stdout of the parent process (the default)
+        * True: stdout is captured and returned
+        * A function: stdout is captured and the result of applying the function to the captured
+          output is returned. Use splitLines as this function to split the output into lines
+        * An existing file descriptor or a file object: stdout goes to the file descriptor or file
+    * `cwd`: working directory
+    * `env`: dictionary with additional environment variables.
+    * `freshEnv`: dictionary with a completely fresh environment.
+    * `decodeErrors`: how to handle decoding errors on stdout and stderr.
+    * `decodeErrorsStdout` and `decodeErrorsStderr`: overwrite the value of decodeErrors for stdout
+        or stderr
+
+    Returns:
+      a `RunResult` value, given access to the captured stdout of the child process (if it was
+      captured at all) and to the exit code of the child process.
+
+    Raises: a `RunError` if `onError=&#39;raise&#39;` and the command terminates with a non-zero exit code.
+
+    Starting with Python 3.5, the `subprocess` module defines a similar function.
+
+    &gt;&gt;&gt; run(&#39;/bin/echo foo&#39;) == RunResult(exitcode=0, stdout=&#39;&#39;)
+    True
+    &gt;&gt;&gt; run(&#39;/bin/echo -n foo&#39;, captureStdout=True) == RunResult(exitcode=0, stdout=&#39;foo&#39;)
+    True
+    &gt;&gt;&gt; run(&#39;/bin/echo -n foo&#39;, captureStdout=lambda s: s + &#39;X&#39;) == \
+        RunResult(exitcode=0, stdout=&#39;fooX&#39;)
+    True
+    &gt;&gt;&gt; run(&#39;/bin/echo foo&#39;, captureStdout=False) == RunResult(exitcode=0, stdout=&#39;&#39;)
+    True
+    &gt;&gt;&gt; run(&#39;cat&#39;, captureStdout=True, input=&#39;blub&#39;) == RunResult(exitcode=0, stdout=&#39;blub&#39;)
+    True
+    &gt;&gt;&gt; try:
+    ...     run(&#39;false&#39;)
+    ...     raise &#39;exception expected&#39;
+    ... except RunError:
+    ...     pass
+    ...
+    &gt;&gt;&gt; run(&#39;false&#39;, onError=&#39;ignore&#39;) == RunResult(exitcode=1, stdout=&#39;&#39;)
+    True
+    &#34;&#34;&#34;
+    if type(cmd) != str and type(cmd) != list:
+        raise ShellError(&#39;cmd parameter must be a string or a list&#39;)
+    if type(cmd) == str:
+        cmd = cmd.replace(&#39;\x00&#39;, &#39; &#39;)
+        cmd = cmd.replace(&#39;\n&#39;, &#39; &#39;)
+    if decodeErrorsStdout is None:
+        decodeErrorsStdout = decodeErrors
+    if decodeErrorsStderr is None:
+        decodeErrorsStderr = decodeErrors
+    stdoutIsFileLike = type(captureStdout) == int or hasattr(captureStdout, &#39;write&#39;)
+    stdoutIsProcFun = not stdoutIsFileLike and hasattr(captureStdout, &#39;__call__&#39;)
+    shouldReturnStdout = (stdoutIsProcFun or
+                            (type(captureStdout) == bool and captureStdout))
+    stdout = None
+    if shouldReturnStdout:
+        stdout = subprocess.PIPE
+    elif stdoutIsFileLike:
+        stdout = captureStdout
+    stdin = None
+    if input:
+        stdin = subprocess.PIPE
+    stderr = None
+    if stderrToStdout:
+        stderr = subprocess.STDOUT
+    elif captureStderr:
+        stderr = subprocess.PIPE
+    input_str = &#39;None&#39;
+    if input:
+        input_str = &#39;&lt;&#39; + str(len(input)) + &#39; characters&gt;&#39;
+        if encoding != &#39;raw&#39;:
+            input = input.encode(encoding)
+    _debug(&#39;Running command &#39; + repr(cmd) + &#39; with captureStdout=&#39; + str(captureStdout) +
+          &#39;, onError=&#39; + onError + &#39;, input=&#39; + input_str)
+    popenEnv = None
+    if env:
+        popenEnv = os.environ.copy()
+        popenEnv.update(env)
+    elif freshEnv:
+        popenEnv = freshEnv.copy()
+        if env:
+            popenEnv.update(env)
+    pipe = subprocess.Popen(
+        cmd, shell=(type(cmd) == str),
+        stdout=stdout, stdin=stdin, stderr=stderr,
+        cwd=cwd, env=popenEnv
+    )
+    (stdoutData, stderrData) = pipe.communicate(input=input)
+    if stdoutData is not None and encoding != &#39;raw&#39;:
+        stdoutData = stdoutData.decode(encoding, errors=decodeErrorsStdout)
+    if stderrData is not None and encoding != &#39;raw&#39;:
+        stderrData = stderrData.decode(encoding, errors=decodeErrorsStderr)
+    exitcode = pipe.returncode
+    if onError == &#39;raise&#39; and exitcode != 0:
+        d = stderrData
+        if stderrToStdout:
+            d = stdoutData
+        err = RunError(cmd, exitcode, d)
+        raise err
+    if onError == &#39;die&#39; and exitcode != 0:
+        sys.exit(exitcode)
+    stdoutRes = stdoutData
+    if stdoutRes is None:
+        stdoutRes = &#39;&#39;
+    if stdoutIsProcFun:
+        stdoutRes = captureStdout(stdoutData)
+    return RunResult(stdoutRes, exitcode)
+
+# the quote function is stolen from https://hg.python.org/cpython/file/3.5/Lib/shlex.py
+_find_unsafe = re.compile(r&#39;[^\w@%+=:,./-]&#39;).search
+def quote(s):
+    &#34;&#34;&#34;Return a shell-escaped version of the string `s`.
+    &#34;&#34;&#34;
+    if not s:
+        return &#34;&#39;&#39;&#34;
+    if _find_unsafe(s) is None:
+        return s
+    # use single quotes, and put single quotes into double quotes
+    # the string $&#39;b is then quoted as &#39;$&#39;&#34;&#39;&#34;&#39;b&#39;
+    return &#34;&#39;&#34; + s.replace(&#34;&#39;&#34;, &#34;&#39;\&#34;&#39;\&#34;&#39;&#34;) + &#34;&#39;&#34;
+
+def listAsArgs(l):
+    &#34;&#34;&#34;
+    Converts a list of command arguments to a single argument string.
+    &#34;&#34;&#34;
+    return &#39; &#39;.join([quote(x) for x in l])
+
+def mergeDicts(*l):
+    &#34;&#34;&#34;
+    Merges a list of dictionaries. Useful for e.g. merging environment dictionaries.
+    &#34;&#34;&#34;
+    res = {}
+    for d in l:
+        res.update(d)
+    return res
+
+#: The directory where the script is located.
+THIS_DIR = os.path.dirname(os.path.realpath(sys.argv[0]))
+
+#: export
+basename = os.path.basename
+
+#: export
+filename = os.path.basename
+
+#: export
+dirname = os.path.dirname
+
+#: export
+abspath = os.path.abspath
+
+#: export
+exists = os.path.exists
+
+isfile = os.path.isfile # DEPRECATED
+
+#: export
+isFile = os.path.isfile
+
+isdir = os.path.isdir # DEPRECATED
+
+#: export
+isDir = os.path.isdir
+
+islink = os.path.islink # DEPRECATED
+
+#: export
+isLink = os.path.islink
+
+splitext = os.path.splitext # DEPRECATED
+
+#: export
+splitExt = os.path.splitext
+
+def removeExt(p):
+    &#34;&#34;&#34;Removes the extension of a filename.&#34;&#34;&#34;
+    return splitext(p)[0]
+
+def getExt(p):
+    &#34;&#34;&#34;Returns the extension of a filename.&#34;&#34;&#34;
+    return splitext(p)[1]
+
+#: export
+expandEnvVars = os.path.expandvars
+
+#: export
+pjoin = os.path.join
+
+#: export
+mv = os.rename
+
+def removeFile(path):
+    &#34;&#34;&#34;
+    Removes the given file. Throws an error if `path` is not a file.
+    &#34;&#34;&#34;
+    if isFile(path):
+        os.remove(path)
+    else:
+        raise ShellError(f&#34;{path} is not a file&#34;)
+
+def cp(src, target):
+    &#34;&#34;&#34;
+    Copy `src` to `target`.
+
+    * If `src` is a file and `target` is a file: overwrites `target`.
+    * If `src` is a file and `target` is a dirname: places the copy in directory `target`,
+      with the name of `src.
+    * If `src` is a directory then `target` must also be a directory: copies
+      the whole `src` directory to `target`.
+    &#34;&#34;&#34;
+    if isFile(src):
+        if isDir(target):
+            fname = basename(src)
+            targetfile = pjoin(target, fname)
+        else:
+            targetfile = target
+        return shutil.copyfile(src, targetfile)
+    else:
+        if isDir(target):
+            name = basename(src)
+            targetDir = pjoin(target, name)
+            return shutil.copytree(src, targetDir)
+        else:
+            raise ValueError(f&#39;Cannot copy directory {src} to non-directory {target}&#39;)
+
+def abort(msg):
+    &#34;&#34;&#34;Print an error message and abort the shell script.&#34;&#34;&#34;
+    sys.stderr.write(&#39;ERROR: &#39; + msg + &#39;\n&#39;)
+    sys.exit(1)
+
+def mkdir(d, mode=0o777, createParents=False):
+    &#34;&#34;&#34;
+    Creates directory `d` with `mode`.
+    &#34;&#34;&#34;
+    if createParents:
+        os.makedirs(d, mode, exist_ok=True)
+    else:
+        os.mkdir(d, mode)
+
+def touch(path):
+    &#34;&#34;&#34;
+    Create an empty file at `path`.
+    &#34;&#34;&#34;
+    run([&#39;touch&#39;, path])
+
+def cd(x):
+    &#34;&#34;&#34;Changes the working directory.&#34;&#34;&#34;
+    _debug(&#39;Changing directory to &#39; + x)
+    os.chdir(x)
+
+def pwd():
+    &#34;&#34;&#34;
+    Return the current working directory.
+    &#34;&#34;&#34;
+    return os.getcwd()
+
+class workingDir:
+    &#34;&#34;&#34;
+    Scoped change of working directory, to be used in a `with`-block:
+
+    ```
+    with workingDir(path):
+        # working directory is now path
+    # previous working directory is restored
+    ```
+    &#34;&#34;&#34;
+    def __init__(self, new_dir):
+        self.new_dir = new_dir
+    def __enter__(self):
+        self.old_dir = pwd()
+        cd(self.new_dir)
+    def __exit__(self, exc_type, value, traceback):
+        cd(self.old_dir)
+        return False # reraise expection
+
+def rm(path):
+    &#34;&#34;&#34;
+    Remove the file at `path`.
+    &#34;&#34;&#34;
+    os.remove(path)
+
+def rmdir(d, recursive=False):
+    &#34;&#34;&#34;
+    Remove directory `d`. Set `recursive=True` if the directory is not empty.
+    &#34;&#34;&#34;
+    if recursive:
+        shutil.rmtree(d)
+    else:
+        os.rmdir(d)
+
+# See https://stackoverflow.com/questions/9741351/how-to-find-exit-code-or-reason-when-atexit-callback-is-called-in-python
+class _ExitHooks(object):
+    def __init__(self):
+        self.exitCode = None
+        self.exception = None
+
+    def hook(self):
+        self._origExit = sys.exit
+        self._origExcHandler = sys.excepthook
+        sys.exit = self.exit
+        sys.excepthook = self.exc_handler
+
+    def exit(self, code=0):
+        if code is None:
+            myCode = 0
+        elif type(code) != int:
+            myCode = 1
+        else:
+            myCode = code
+        self.exitCode = myCode
+        self._origExit(code)
+
+    def exc_handler(self, exc_type, exc, *args):
+        self.exception = exc
+        self._origExcHandler(exc_type, exc, *args)
+
+    def isExitSuccess(self):
+        return (self.exitCode is None or self.exitCode == 0) and self.exception is None
+
+    def isExitFailure(self):
+        return not self.isExitSuccess()
+
+_hooks = _ExitHooks()
+_hooks.hook()
+
+def _registerAtExit(action, mode):
+    def f():
+        _debug(f&#39;Running exit hook, exit code: {e}, mode: {mode}&#39;)
+        if mode is True:
+            action()
+        elif mode in [&#39;ifSuccess&#39;] and _hooks.isExitSuccess():
+            action()
+        elif mode in [&#39;ifFailure&#39;] and _hooks.isExitFailure():
+            action()
+        else:
+            _debug(&#39;Not running exit action&#39;)
+    atexit.register(f)
+
+def mkTempFile(suffix=&#39;&#39;, prefix=&#39;&#39;, dir=None, deleteAtExit=True):
+    &#34;&#34;&#34;Create a temporary file.
+
+    `deleteAtExit` controls if and how the file is deleted once the shell sript terminates.
+   It has one of the following values.
+
+    * True: the file is deleted unconditionally on exit.
+    * &#39;ifSuccess&#39;: the file is deleted if the program exists with code 0
+    * &#39;ifFailure&#39;: the file is deleted if the program exists with code != 0
+    &#34;&#34;&#34;
+
+
+    f = tempfile.mktemp(suffix, prefix, dir)
+    if deleteAtExit:
+        _registerAtExit(lambda: rm(f), deleteAtExit)
+    return f
+
+def mkTempDir(suffix=&#39;&#39;, prefix=&#39;tmp&#39;, dir=None, deleteAtExit=True):
+    &#34;&#34;&#34;Create a temporary directory. The `deleteAtExit` parameter
+    has the same meaning as for `mkTempFile`.
+    &#34;&#34;&#34;
+    d = tempfile.mkdtemp(suffix, prefix, dir)
+    if deleteAtExit:
+        _registerAtExit(lambda: rmdir(d, True), deleteAtExit)
+    return d
+
+class tempDir:
+    &#34;&#34;&#34;
+    Scoped creation of a temporary directory, to be used in a `with`-block:
+
+    ```
+    with tempDir() as d:
+        # do something with d
+    # d gets deleted at the end of the with-block
+    ```
+
+    Per default, the temporary directory is deleted at the end of the `with`-block.
+    With `delete=False`, deletion is deactivated. With `onException=False`, deletion
+    is only performed if the `with`-block finishes without an exception.
+    &#34;&#34;&#34;
+    def __init__(self, suffix=&#39;&#39;, prefix=&#39;tmp&#39;, dir=None, onException=True, delete=True):
+        self.suffix = suffix
+        self.prefix = prefix
+        self.dir = dir
+        self.onException = onException
+        self.delete = delete
+    def __enter__(self):
+        self.dir_to_delete = mkTempDir(suffix=self.suffix,
+                                       prefix=self.prefix,
+                                       dir=self.dir,
+                                       deleteAtExit=False)
+        return self.dir_to_delete
+    def __exit__(self, exc_type, value, traceback):
+        if exc_type is not None and not self.onException:
+            return False # reraise
+        if self.delete:
+            rmdir(self.dir_to_delete, recursive=True)
+        return False # reraise expection
+
+def ls(d, *globs):
+    &#34;&#34;&#34;
+    Returns a list of pathnames contained in `d`, matching any of the the given `globs`.
+
+    If no globs are given, all files are returned.
+
+    The pathnames in the result list contain the directory part `d`.
+
+    &gt;&gt;&gt; &#39;../src/shell.py&#39; in ls(&#39;../src/&#39;, &#39;*.py&#39;, &#39;*.txt&#39;)
+    True
+    &#34;&#34;&#34;
+    res = []
+    if not d:
+        d = &#39;.&#39;
+    for f in os.listdir(d):
+        if len(globs) == 0:
+            res.append(os.path.join(d, f))
+        else:
+            for g in globs:
+                if fnmatch.fnmatch(f, g):
+                    res.append(os.path.join(d, f))
+                    break
+    return res
+
+def readBinaryFile(name):
+    &#34;&#34;&#34;Return the binary content of file `name`.&#34;&#34;&#34;
+    with open(name, &#39;rb&#39;) as f:
+        return f.read()
+
+def readFile(name):
+    &#34;&#34;&#34;Return the textual content of file `name`.&#34;&#34;&#34;
+    with open(name, &#39;r&#39;, encoding=&#39;utf-8&#39;) as f:
+        return f.read()
+
+def writeFile(name, content):
+    &#34;&#34;&#34;Write text `content` to file `name`.&#34;&#34;&#34;
+    with open(name, &#39;w&#39;, encoding=&#39;utf-8&#39;) as f:
+        f.write(content)
+
+def writeBinaryFile(name, content):
+    &#34;&#34;&#34;Write binary string `content` to file `name`.&#34;&#34;&#34;
+    with open(name, &#39;wb&#39;) as f:
+        f.write(content)
+
+def _openForTee(x):
+    if type(x) == str:
+        return open(x, &#39;wb&#39;)
+    elif type(x) == tuple:
+        (name, mode) = x
+        if mode == &#39;w&#39;:
+            return open(name, &#39;wb&#39;)
+        elif mode == &#39;a&#39;:
+            return open(name, &#39;wa&#39;)
+        raise ValueError(f&#39;Bad mode: {mode}&#39;)
+    elif x == TEE_STDERR:
+        return sys.stderr
+    elif x == TEE_STDOUT:
+        return sys.stdout
+    else:
+        raise ValueError(f&#39;Invalid file argument: {x}&#39;)
+
+def _teeChildWorker(pRead, pWrite, fileNames, bufferSize):
+    _debug(&#39;child of tee started&#39;)
+    files = []
+    try:
+        for x in fileNames:
+            files.append(_openForTee(x))
+        bytes = os.read(pRead, bufferSize)
+        while(bytes):
+            for f in files:
+                if f is sys.stderr or f is sys.stdout:
+                    data = bytes.decode(&#39;utf8&#39;, errors=&#39;replace&#39;)
+                else:
+                    data = bytes
+                f.write(data)
+                f.flush()
+                _debug(f&#39;Wrote {data} to {f}&#39;)
+            bytes = os.read(pRead, bufferSize)
+    except Exception as e:
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
+        sys.stderr.write(f&#39;ERROR: tee failed with an exception: {e}\n&#39;)
+        for l in lines:
+            sys.stderr.write(l)
+    finally:
+        for f in files:
+            if f is not sys.stderr and f is not sys.stdout:
+                try:
+                    _debug(f&#39;closing {f}&#39;)
+                    f.close()
+                except:
+                    pass
+            _debug(f&#39;Closed {f}&#39;)
+        _debug(&#39;child of tee finished&#39;)
+
+def _teeChild(pRead, pWrite, files, bufferSize):
+    try:
+        _teeChildWorker(pRead, pWrite, files, bufferSize)
+    except:
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
+        print(&#39;&#39;.join(&#39;BUG in shell.py &#39; + line for line in lines))
+
+#: Special value for `createTee`.
+TEE_STDOUT = object()
+
+#: Special value for `createTee`.
+TEE_STDERR = object()
+
+def createTee(files, bufferSize=128):
+        &#34;&#34;&#34;Get a file object that will mirror writes across multiple files.
+        The result can be used for the `captureStdout` or `captureStderr` parameter
+        of `run` to mimic the behavior of the `tee` command.
+
+        Parameters:
+
+        * `files`: A list where each element is one of the following:
+             * A file name, to be opened for writing
+             * A pair `(fileName, mode)`, where mode is `&#39;w&#39;` or `&#39;a&#39;`
+             * One of the constants `TEE_STDOUT` or `TEE_STDERR`. Output then goes
+               to stdout/stderr.
+
+        *  `bufferSize`:   Control the size of the buffer between writes to the
+                         resulting file object and the list of files.
+
+        Result: a file-like object
+        &#34;&#34;&#34;
+        pRead, pWrite = os.pipe()
+        p = Thread(target=_teeChild, args=(pRead, pWrite, files, bufferSize))
+        p.start()
+        return os.fdopen(pWrite,&#39;w&#39;)
+
+def exit(code):
+    &#34;&#34;&#34;Exit the program with the given exit `code`.
+    &#34;&#34;&#34;
+    sys.exit(code)
+
+#: export
+fileSize = os.path.getsize</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-variables">Global variables</h2>
+<dl>
+<dt id="shell.HOME"><code class="name">var <span class="ident">HOME</span></code></dt>
+<dd>
+<div class="desc"><p>The value of the environment variable <code><a title="shell.HOME" href="#shell.HOME">HOME</a></code></p></div>
+</dd>
+<dt id="shell.TEE_STDERR"><code class="name">var <span class="ident">TEE_STDERR</span></code></dt>
+<dd>
+<div class="desc"><p>Special value for <code><a title="shell.createTee" href="#shell.createTee">createTee()</a></code>.</p></div>
+</dd>
+<dt id="shell.TEE_STDOUT"><code class="name">var <span class="ident">TEE_STDOUT</span></code></dt>
+<dd>
+<div class="desc"><p>Special value for <code><a title="shell.createTee" href="#shell.createTee">createTee()</a></code>.</p></div>
+</dd>
+<dt id="shell.THIS_DIR"><code class="name">var <span class="ident">THIS_DIR</span></code></dt>
+<dd>
+<div class="desc"><p>The directory where the script is located.</p></div>
+</dd>
+</dl>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="shell.abort"><code class="name flex">
+<span>def <span class="ident">abort</span></span>(<span>msg)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Print an error message and abort the shell script.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def abort(msg):
+    &#34;&#34;&#34;Print an error message and abort the shell script.&#34;&#34;&#34;
+    sys.stderr.write(&#39;ERROR: &#39; + msg + &#39;\n&#39;)
+    sys.exit(1)</code></pre>
+</details>
+</dd>
+<dt id="shell.abspath"><code class="name flex">
+<span>def <span class="ident">abspath</span></span>(<span>path)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Return an absolute path.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def abspath(path):
+    &#34;&#34;&#34;Return an absolute path.&#34;&#34;&#34;
+    path = os.fspath(path)
+    if not isabs(path):
+        if isinstance(path, bytes):
+            cwd = os.getcwdb()
+        else:
+            cwd = os.getcwd()
+        path = join(cwd, path)
+    return normpath(path)</code></pre>
+</details>
+</dd>
+<dt id="shell.basename"><code class="name flex">
+<span>def <span class="ident">basename</span></span>(<span>p)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns the final component of a pathname</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def basename(p):
+    &#34;&#34;&#34;Returns the final component of a pathname&#34;&#34;&#34;
+    p = os.fspath(p)
+    sep = _get_sep(p)
+    i = p.rfind(sep) + 1
+    return p[i:]</code></pre>
+</details>
+</dd>
+<dt id="shell.cd"><code class="name flex">
+<span>def <span class="ident">cd</span></span>(<span>x)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Changes the working directory.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def cd(x):
+    &#34;&#34;&#34;Changes the working directory.&#34;&#34;&#34;
+    _debug(&#39;Changing directory to &#39; + x)
+    os.chdir(x)</code></pre>
+</details>
+</dd>
+<dt id="shell.cp"><code class="name flex">
+<span>def <span class="ident">cp</span></span>(<span>src, target)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Copy <code>src</code> to <code>target</code>.</p>
+<ul>
+<li>If <code>src</code> is a file and <code>target</code> is a file: overwrites <code>target</code>.</li>
+<li>If <code>src</code> is a file and <code>target</code> is a dirname: places the copy in directory <code>target</code>,
+with the name of `src.</li>
+<li>If <code>src</code> is a directory then <code>target</code> must also be a directory: copies
+the whole <code>src</code> directory to <code>target</code>.</li>
+</ul></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def cp(src, target):
+    &#34;&#34;&#34;
+    Copy `src` to `target`.
+
+    * If `src` is a file and `target` is a file: overwrites `target`.
+    * If `src` is a file and `target` is a dirname: places the copy in directory `target`,
+      with the name of `src.
+    * If `src` is a directory then `target` must also be a directory: copies
+      the whole `src` directory to `target`.
+    &#34;&#34;&#34;
+    if isFile(src):
+        if isDir(target):
+            fname = basename(src)
+            targetfile = pjoin(target, fname)
+        else:
+            targetfile = target
+        return shutil.copyfile(src, targetfile)
+    else:
+        if isDir(target):
+            name = basename(src)
+            targetDir = pjoin(target, name)
+            return shutil.copytree(src, targetDir)
+        else:
+            raise ValueError(f&#39;Cannot copy directory {src} to non-directory {target}&#39;)</code></pre>
+</details>
+</dd>
+<dt id="shell.createTee"><code class="name flex">
+<span>def <span class="ident">createTee</span></span>(<span>files, bufferSize=128)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get a file object that will mirror writes across multiple files.
+The result can be used for the <code>captureStdout</code> or <code>captureStderr</code> parameter
+of <code><a title="shell.run" href="#shell.run">run()</a></code> to mimic the behavior of the <code>tee</code> command.</p>
+<p>Parameters:</p>
+<ul>
+<li>
+<p><code>files</code>: A list where each element is one of the following:</p>
+<ul>
+<li>A file name, to be opened for writing</li>
+<li>A pair <code>(fileName, mode)</code>, where mode is <code>'w'</code> or <code>'a'</code></li>
+<li>One of the constants <code><a title="shell.TEE_STDOUT" href="#shell.TEE_STDOUT">TEE_STDOUT</a></code> or <code><a title="shell.TEE_STDERR" href="#shell.TEE_STDERR">TEE_STDERR</a></code>. Output then goes
+to stdout/stderr.</li>
+</ul>
+</li>
+<li>
+<p><code>bufferSize</code>:
+Control the size of the buffer between writes to the
+resulting file object and the list of files.</p>
+</li>
+</ul>
+<p>Result: a file-like object</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def createTee(files, bufferSize=128):
+        &#34;&#34;&#34;Get a file object that will mirror writes across multiple files.
+        The result can be used for the `captureStdout` or `captureStderr` parameter
+        of `run` to mimic the behavior of the `tee` command.
+
+        Parameters:
+
+        * `files`: A list where each element is one of the following:
+             * A file name, to be opened for writing
+             * A pair `(fileName, mode)`, where mode is `&#39;w&#39;` or `&#39;a&#39;`
+             * One of the constants `TEE_STDOUT` or `TEE_STDERR`. Output then goes
+               to stdout/stderr.
+
+        *  `bufferSize`:   Control the size of the buffer between writes to the
+                         resulting file object and the list of files.
+
+        Result: a file-like object
+        &#34;&#34;&#34;
+        pRead, pWrite = os.pipe()
+        p = Thread(target=_teeChild, args=(pRead, pWrite, files, bufferSize))
+        p.start()
+        return os.fdopen(pWrite,&#39;w&#39;)</code></pre>
+</details>
+</dd>
+<dt id="shell.dirname"><code class="name flex">
+<span>def <span class="ident">dirname</span></span>(<span>p)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns the directory component of a pathname</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def dirname(p):
+    &#34;&#34;&#34;Returns the directory component of a pathname&#34;&#34;&#34;
+    p = os.fspath(p)
+    sep = _get_sep(p)
+    i = p.rfind(sep) + 1
+    head = p[:i]
+    if head and head != sep*len(head):
+        head = head.rstrip(sep)
+    return head</code></pre>
+</details>
+</dd>
+<dt id="shell.exists"><code class="name flex">
+<span>def <span class="ident">exists</span></span>(<span>path)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test whether a path exists.
+Returns False for broken symbolic links</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def exists(path):
+    &#34;&#34;&#34;Test whether a path exists.  Returns False for broken symbolic links&#34;&#34;&#34;
+    try:
+        os.stat(path)
+    except (OSError, ValueError):
+        return False
+    return True</code></pre>
+</details>
+</dd>
+<dt id="shell.exit"><code class="name flex">
+<span>def <span class="ident">exit</span></span>(<span>code)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Exit the program with the given exit <code>code</code>.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def exit(code):
+    &#34;&#34;&#34;Exit the program with the given exit `code`.
+    &#34;&#34;&#34;
+    sys.exit(code)</code></pre>
+</details>
+</dd>
+<dt id="shell.expandEnvVars"><code class="name flex">
+<span>def <span class="ident">expandEnvVars</span></span>(<span>path)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Expand shell variables of form $var and ${var}.
+Unknown variables
+are left unchanged.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def expandvars(path):
+    &#34;&#34;&#34;Expand shell variables of form $var and ${var}.  Unknown variables
+    are left unchanged.&#34;&#34;&#34;
+    path = os.fspath(path)
+    global _varprog, _varprogb
+    if isinstance(path, bytes):
+        if b&#39;$&#39; not in path:
+            return path
+        if not _varprogb:
+            import re
+            _varprogb = re.compile(br&#39;\$(\w+|\{[^}]*\})&#39;, re.ASCII)
+        search = _varprogb.search
+        start = b&#39;{&#39;
+        end = b&#39;}&#39;
+        environ = getattr(os, &#39;environb&#39;, None)
+    else:
+        if &#39;$&#39; not in path:
+            return path
+        if not _varprog:
+            import re
+            _varprog = re.compile(r&#39;\$(\w+|\{[^}]*\})&#39;, re.ASCII)
+        search = _varprog.search
+        start = &#39;{&#39;
+        end = &#39;}&#39;
+        environ = os.environ
+    i = 0
+    while True:
+        m = search(path, i)
+        if not m:
+            break
+        i, j = m.span(0)
+        name = m.group(1)
+        if name.startswith(start) and name.endswith(end):
+            name = name[1:-1]
+        try:
+            if environ is None:
+                value = os.fsencode(os.environ[os.fsdecode(name)])
+            else:
+                value = environ[name]
+        except KeyError:
+            i = j
+        else:
+            tail = path[j:]
+            path = path[:i] + value
+            i = len(path)
+            path += tail
+    return path</code></pre>
+</details>
+</dd>
+<dt id="shell.fatal"><code class="name flex">
+<span>def <span class="ident">fatal</span></span>(<span>s)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Display an error message to stderr.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def fatal(s):
+    &#34;&#34;&#34;Display an error message to stderr.&#34;&#34;&#34;
+    sys.stderr.write(&#39;ERROR: &#39; + str(s) + &#39;\n&#39;)</code></pre>
+</details>
+</dd>
+<dt id="shell.fileSize"><code class="name flex">
+<span>def <span class="ident">fileSize</span></span>(<span>filename)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Return the size of a file, reported by os.stat().</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def getsize(filename):
+    &#34;&#34;&#34;Return the size of a file, reported by os.stat().&#34;&#34;&#34;
+    return os.stat(filename).st_size</code></pre>
+</details>
+</dd>
+<dt id="shell.filename"><code class="name flex">
+<span>def <span class="ident">filename</span></span>(<span>p)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns the final component of a pathname</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def basename(p):
+    &#34;&#34;&#34;Returns the final component of a pathname&#34;&#34;&#34;
+    p = os.fspath(p)
+    sep = _get_sep(p)
+    i = p.rfind(sep) + 1
+    return p[i:]</code></pre>
+</details>
+</dd>
+<dt id="shell.getExt"><code class="name flex">
+<span>def <span class="ident">getExt</span></span>(<span>p)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns the extension of a filename.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def getExt(p):
+    &#34;&#34;&#34;Returns the extension of a filename.&#34;&#34;&#34;
+    return splitext(p)[1]</code></pre>
+</details>
+</dd>
+<dt id="shell.gnuProg"><code class="name flex">
+<span>def <span class="ident">gnuProg</span></span>(<span>p)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get the GNU version of progam p.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def gnuProg(p):
+    &#34;&#34;&#34;Get the GNU version of progam p.&#34;&#34;&#34;
+    prog = resolveProg(&#39;g&#39; + p, p)
+    if not prog:
+        raise ShellError(&#39;Program &#39; + str(p) + &#39; not found at all&#39;)
+    res = run(&#39;%s --version&#39; % prog, captureStdout=True, onError=&#39;ignore&#39;)
+    if &#39;GNU&#39; in res.stdout:
+        _debug(&#39;Resolved program %s as %s&#39; % (p, prog))
+        return prog
+    else:
+        raise ShellError(&#39;No GNU variant found for program &#39; + str(p))</code></pre>
+</details>
+</dd>
+<dt id="shell.isDir"><code class="name flex">
+<span>def <span class="ident">isDir</span></span>(<span>s)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Return true if the pathname refers to an existing directory.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def isdir(s):
+    &#34;&#34;&#34;Return true if the pathname refers to an existing directory.&#34;&#34;&#34;
+    try:
+        st = os.stat(s)
+    except (OSError, ValueError):
+        return False
+    return stat.S_ISDIR(st.st_mode)</code></pre>
+</details>
+</dd>
+<dt id="shell.isFile"><code class="name flex">
+<span>def <span class="ident">isFile</span></span>(<span>path)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test whether a path is a regular file</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def isfile(path):
+    &#34;&#34;&#34;Test whether a path is a regular file&#34;&#34;&#34;
+    try:
+        st = os.stat(path)
+    except (OSError, ValueError):
+        return False
+    return stat.S_ISREG(st.st_mode)</code></pre>
+</details>
+</dd>
+<dt id="shell.isLink"><code class="name flex">
+<span>def <span class="ident">isLink</span></span>(<span>path)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test whether a path is a symbolic link</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def islink(path):
+    &#34;&#34;&#34;Test whether a path is a symbolic link&#34;&#34;&#34;
+    try:
+        st = os.lstat(path)
+    except (OSError, ValueError, AttributeError):
+        return False
+    return stat.S_ISLNK(st.st_mode)</code></pre>
+</details>
+</dd>
+<dt id="shell.listAsArgs"><code class="name flex">
+<span>def <span class="ident">listAsArgs</span></span>(<span>l)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Converts a list of command arguments to a single argument string.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def listAsArgs(l):
+    &#34;&#34;&#34;
+    Converts a list of command arguments to a single argument string.
+    &#34;&#34;&#34;
+    return &#39; &#39;.join([quote(x) for x in l])</code></pre>
+</details>
+</dd>
+<dt id="shell.ls"><code class="name flex">
+<span>def <span class="ident">ls</span></span>(<span>d, *globs)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns a list of pathnames contained in <code>d</code>, matching any of the the given <code>globs</code>.</p>
+<p>If no globs are given, all files are returned.</p>
+<p>The pathnames in the result list contain the directory part <code>d</code>.</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; '../src/shell.py' in ls('../src/', '*.py', '*.txt')
+True
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def ls(d, *globs):
+    &#34;&#34;&#34;
+    Returns a list of pathnames contained in `d`, matching any of the the given `globs`.
+
+    If no globs are given, all files are returned.
+
+    The pathnames in the result list contain the directory part `d`.
+
+    &gt;&gt;&gt; &#39;../src/shell.py&#39; in ls(&#39;../src/&#39;, &#39;*.py&#39;, &#39;*.txt&#39;)
+    True
+    &#34;&#34;&#34;
+    res = []
+    if not d:
+        d = &#39;.&#39;
+    for f in os.listdir(d):
+        if len(globs) == 0:
+            res.append(os.path.join(d, f))
+        else:
+            for g in globs:
+                if fnmatch.fnmatch(f, g):
+                    res.append(os.path.join(d, f))
+                    break
+    return res</code></pre>
+</details>
+</dd>
+<dt id="shell.mergeDicts"><code class="name flex">
+<span>def <span class="ident">mergeDicts</span></span>(<span>*l)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Merges a list of dictionaries. Useful for e.g. merging environment dictionaries.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def mergeDicts(*l):
+    &#34;&#34;&#34;
+    Merges a list of dictionaries. Useful for e.g. merging environment dictionaries.
+    &#34;&#34;&#34;
+    res = {}
+    for d in l:
+        res.update(d)
+    return res</code></pre>
+</details>
+</dd>
+<dt id="shell.mkTempDir"><code class="name flex">
+<span>def <span class="ident">mkTempDir</span></span>(<span>suffix='', prefix='tmp', dir=None, deleteAtExit=True)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Create a temporary directory. The <code>deleteAtExit</code> parameter
+has the same meaning as for <code><a title="shell.mkTempFile" href="#shell.mkTempFile">mkTempFile()</a></code>.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def mkTempDir(suffix=&#39;&#39;, prefix=&#39;tmp&#39;, dir=None, deleteAtExit=True):
+    &#34;&#34;&#34;Create a temporary directory. The `deleteAtExit` parameter
+    has the same meaning as for `mkTempFile`.
+    &#34;&#34;&#34;
+    d = tempfile.mkdtemp(suffix, prefix, dir)
+    if deleteAtExit:
+        _registerAtExit(lambda: rmdir(d, True), deleteAtExit)
+    return d</code></pre>
+</details>
+</dd>
+<dt id="shell.mkTempFile"><code class="name flex">
+<span>def <span class="ident">mkTempFile</span></span>(<span>suffix='', prefix='', dir=None, deleteAtExit=True)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Create a temporary file.</p>
+<p><code>deleteAtExit</code> controls if and how the file is deleted once the shell sript terminates.
+It has one of the following values.</p>
+<ul>
+<li>True: the file is deleted unconditionally on exit.</li>
+<li>'ifSuccess': the file is deleted if the program exists with code 0</li>
+<li>'ifFailure': the file is deleted if the program exists with code != 0</li>
+</ul></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def mkTempFile(suffix=&#39;&#39;, prefix=&#39;&#39;, dir=None, deleteAtExit=True):
+    &#34;&#34;&#34;Create a temporary file.
+
+    `deleteAtExit` controls if and how the file is deleted once the shell sript terminates.
+   It has one of the following values.
+
+    * True: the file is deleted unconditionally on exit.
+    * &#39;ifSuccess&#39;: the file is deleted if the program exists with code 0
+    * &#39;ifFailure&#39;: the file is deleted if the program exists with code != 0
+    &#34;&#34;&#34;
+
+
+    f = tempfile.mktemp(suffix, prefix, dir)
+    if deleteAtExit:
+        _registerAtExit(lambda: rm(f), deleteAtExit)
+    return f</code></pre>
+</details>
+</dd>
+<dt id="shell.mkdir"><code class="name flex">
+<span>def <span class="ident">mkdir</span></span>(<span>d, mode=511, createParents=False)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Creates directory <code>d</code> with <code>mode</code>.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def mkdir(d, mode=0o777, createParents=False):
+    &#34;&#34;&#34;
+    Creates directory `d` with `mode`.
+    &#34;&#34;&#34;
+    if createParents:
+        os.makedirs(d, mode, exist_ok=True)
+    else:
+        os.mkdir(d, mode)</code></pre>
+</details>
+</dd>
+<dt id="shell.mv"><code class="name flex">
+<span>def <span class="ident">mv</span></span>(<span>src, dst, *, src_dir_fd=None, dst_dir_fd=None)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Rename a file or directory.</p>
+<p>If either src_dir_fd or dst_dir_fd is not None, it should be a file
+descriptor open to a directory, and the respective path string (src or dst)
+should be relative; the path will then be relative to that directory.
+src_dir_fd and dst_dir_fd, may not be implemented on your platform.
+If they are unavailable, using them will raise a NotImplementedError.</p></div>
+</dd>
+<dt id="shell.pjoin"><code class="name flex">
+<span>def <span class="ident">pjoin</span></span>(<span>a, *p)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Join two or more pathname components, inserting '/' as needed.
+If any component is an absolute path, all previous path components
+will be discarded.
+An empty last part will result in a path that
+ends with a separator.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def join(a, *p):
+    &#34;&#34;&#34;Join two or more pathname components, inserting &#39;/&#39; as needed.
+    If any component is an absolute path, all previous path components
+    will be discarded.  An empty last part will result in a path that
+    ends with a separator.&#34;&#34;&#34;
+    a = os.fspath(a)
+    sep = _get_sep(a)
+    path = a
+    try:
+        if not p:
+            path[:0] + sep  #23780: Ensure compatible data type even if p is null.
+        for b in map(os.fspath, p):
+            if b.startswith(sep):
+                path = b
+            elif not path or path.endswith(sep):
+                path += b
+            else:
+                path += sep + b
+    except (TypeError, AttributeError, BytesWarning):
+        genericpath._check_arg_types(&#39;join&#39;, a, *p)
+        raise
+    return path</code></pre>
+</details>
+</dd>
+<dt id="shell.pwd"><code class="name flex">
+<span>def <span class="ident">pwd</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Return the current working directory.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def pwd():
+    &#34;&#34;&#34;
+    Return the current working directory.
+    &#34;&#34;&#34;
+    return os.getcwd()</code></pre>
+</details>
+</dd>
+<dt id="shell.quote"><code class="name flex">
+<span>def <span class="ident">quote</span></span>(<span>s)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Return a shell-escaped version of the string <code>s</code>.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def quote(s):
+    &#34;&#34;&#34;Return a shell-escaped version of the string `s`.
+    &#34;&#34;&#34;
+    if not s:
+        return &#34;&#39;&#39;&#34;
+    if _find_unsafe(s) is None:
+        return s
+    # use single quotes, and put single quotes into double quotes
+    # the string $&#39;b is then quoted as &#39;$&#39;&#34;&#39;&#34;&#39;b&#39;
+    return &#34;&#39;&#34; + s.replace(&#34;&#39;&#34;, &#34;&#39;\&#34;&#39;\&#34;&#39;&#34;) + &#34;&#39;&#34;</code></pre>
+</details>
+</dd>
+<dt id="shell.readBinaryFile"><code class="name flex">
+<span>def <span class="ident">readBinaryFile</span></span>(<span>name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Return the binary content of file <code>name</code>.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def readBinaryFile(name):
+    &#34;&#34;&#34;Return the binary content of file `name`.&#34;&#34;&#34;
+    with open(name, &#39;rb&#39;) as f:
+        return f.read()</code></pre>
+</details>
+</dd>
+<dt id="shell.readFile"><code class="name flex">
+<span>def <span class="ident">readFile</span></span>(<span>name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Return the textual content of file <code>name</code>.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def readFile(name):
+    &#34;&#34;&#34;Return the textual content of file `name`.&#34;&#34;&#34;
+    with open(name, &#39;r&#39;, encoding=&#39;utf-8&#39;) as f:
+        return f.read()</code></pre>
+</details>
+</dd>
+<dt id="shell.removeExt"><code class="name flex">
+<span>def <span class="ident">removeExt</span></span>(<span>p)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Removes the extension of a filename.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def removeExt(p):
+    &#34;&#34;&#34;Removes the extension of a filename.&#34;&#34;&#34;
+    return splitext(p)[0]</code></pre>
+</details>
+</dd>
+<dt id="shell.removeFile"><code class="name flex">
+<span>def <span class="ident">removeFile</span></span>(<span>path)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Removes the given file. Throws an error if <code>path</code> is not a file.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def removeFile(path):
+    &#34;&#34;&#34;
+    Removes the given file. Throws an error if `path` is not a file.
+    &#34;&#34;&#34;
+    if isFile(path):
+        os.remove(path)
+    else:
+        raise ShellError(f&#34;{path} is not a file&#34;)</code></pre>
+</details>
+</dd>
+<dt id="shell.resolveProg"><code class="name flex">
+<span>def <span class="ident">resolveProg</span></span>(<span>*l)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Return the first program in the list that exist and is runnable.</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; resolveProg()
+&gt;&gt;&gt; resolveProg('foobarbaz', 'python', 'grep')
+'python'
+&gt;&gt;&gt; resolveProg('foobarbaz', 'padauz')
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def resolveProg(*l):
+    &#34;&#34;&#34;Return the first program in the list that exist and is runnable.
+    &gt;&gt;&gt; resolveProg()
+    &gt;&gt;&gt; resolveProg(&#39;foobarbaz&#39;, &#39;python&#39;, &#39;grep&#39;)
+    &#39;python&#39;
+    &gt;&gt;&gt; resolveProg(&#39;foobarbaz&#39;, &#39;padauz&#39;)
+    &#34;&#34;&#34;
+    for x in l:
+        ecode = run(&#39;command -v %s&#39; % quote(x), captureStdout=DEV_NULL,
+                    onError=&#39;ignore&#39;).exitcode
+        if ecode == 0:
+            return x
+    return None</code></pre>
+</details>
+</dd>
+<dt id="shell.rm"><code class="name flex">
+<span>def <span class="ident">rm</span></span>(<span>path)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Remove the file at <code>path</code>.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def rm(path):
+    &#34;&#34;&#34;
+    Remove the file at `path`.
+    &#34;&#34;&#34;
+    os.remove(path)</code></pre>
+</details>
+</dd>
+<dt id="shell.rmdir"><code class="name flex">
+<span>def <span class="ident">rmdir</span></span>(<span>d, recursive=False)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Remove directory <code>d</code>. Set <code>recursive=True</code> if the directory is not empty.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def rmdir(d, recursive=False):
+    &#34;&#34;&#34;
+    Remove directory `d`. Set `recursive=True` if the directory is not empty.
+    &#34;&#34;&#34;
+    if recursive:
+        shutil.rmtree(d)
+    else:
+        os.rmdir(d)</code></pre>
+</details>
+</dd>
+<dt id="shell.run"><code class="name flex">
+<span>def <span class="ident">run</span></span>(<span>cmd: Union[str, list[str]], onError: Literal['raise', 'die', 'ignore'] = 'raise', input: Optional[str] = None, encoding: str = 'utf-8', captureStdout: Union[bool, Callable, TextIO, BinaryIO] = False, captureStderr: bool = False, stderrToStdout: bool = False, cwd: Optional[str] = None, env: Optional[dict] = None, freshEnv: Optional[dict] = None, decodeErrors: Literal['strict', 'ignore', 'replace'] = 'replace', decodeErrorsStdout: Optional[Literal['strict', 'ignore', 'replace']] = None, decodeErrorsStderr: Optional[Literal['strict', 'ignore', 'replace']] = None)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Runs the given command.</p>
+<p>Parameters:</p>
+<ul>
+<li><code>cmd</code>: the command, either a list (command with raw args)
+or a string (subject to shell expansion)</li>
+<li><code>onError</code>: what to do if the child process finishes with an exit code different from 0<ul>
+<li>'raise': raise an exception (the default)</li>
+<li>'die': terminate the whole process</li>
+<li>'ignore'</li>
+</ul>
+</li>
+<li><code>input</code>: string that is send to the stdin of the child process.</li>
+<li><code>encoding</code>: the encoding for stdin, stdout, and stderr. If <code>encoding == 'raw'</code>,
+then the raw bytes are passed/returned.</li>
+<li><code>captureStdout</code> and <code>captureStderr</code>: what to do with stdout/stderr of the child process. Possible values:<ul>
+<li>False: stdout is not captured and goes to stdout of the parent process (the default)</li>
+<li>True: stdout is captured and returned</li>
+<li>A function: stdout is captured and the result of applying the function to the captured
+output is returned. Use splitLines as this function to split the output into lines</li>
+<li>An existing file descriptor or a file object: stdout goes to the file descriptor or file</li>
+</ul>
+</li>
+<li><code>cwd</code>: working directory</li>
+<li><code>env</code>: dictionary with additional environment variables.</li>
+<li><code>freshEnv</code>: dictionary with a completely fresh environment.</li>
+<li><code>decodeErrors</code>: how to handle decoding errors on stdout and stderr.</li>
+<li><code>decodeErrorsStdout</code> and <code>decodeErrorsStderr</code>: overwrite the value of decodeErrors for stdout
+or stderr</li>
+</ul>
+<h2 id="returns">Returns</h2>
+<p>a <code><a title="shell.RunResult" href="#shell.RunResult">RunResult</a></code> value, given access to the captured stdout of the child process (if it was
+captured at all) and to the exit code of the child process.
+Raises: a <code><a title="shell.RunError" href="#shell.RunError">RunError</a></code> if <code>onError='raise'</code> and the command terminates with a non-zero exit code.</p>
+<p>Starting with Python 3.5, the <code>subprocess</code> module defines a similar function.</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; run('/bin/echo foo') == RunResult(exitcode=0, stdout='')
+True
+&gt;&gt;&gt; run('/bin/echo -n foo', captureStdout=True) == RunResult(exitcode=0, stdout='foo')
+True
+&gt;&gt;&gt; run('/bin/echo -n foo', captureStdout=lambda s: s + 'X') ==         RunResult(exitcode=0, stdout='fooX')
+True
+&gt;&gt;&gt; run('/bin/echo foo', captureStdout=False) == RunResult(exitcode=0, stdout='')
+True
+&gt;&gt;&gt; run('cat', captureStdout=True, input='blub') == RunResult(exitcode=0, stdout='blub')
+True
+&gt;&gt;&gt; try:
+...     run('false')
+...     raise 'exception expected'
+... except RunError:
+...     pass
+...
+&gt;&gt;&gt; run('false', onError='ignore') == RunResult(exitcode=1, stdout='')
+True
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def run(cmd: Union[str, list[str]],
+        onError: Literal[&#39;raise&#39;, &#39;die&#39;, &#39;ignore&#39;] = &#39;raise&#39;,
+        input: Optional[str]=None,
+        encoding: str=&#39;utf-8&#39;,
+        captureStdout: Union[bool, Callable, TextIO, BinaryIO]=False,
+        captureStderr: bool=False,
+        stderrToStdout: bool=False,
+        cwd: Optional[str]=None,
+        env: Optional[dict]=None,
+        freshEnv: Optional[dict]=None,
+        decodeErrors: Literal[&#39;strict&#39;, &#39;ignore&#39;, &#39;replace&#39;]=&#39;replace&#39;,
+        decodeErrorsStdout: Optional[Literal[&#39;strict&#39;, &#39;ignore&#39;, &#39;replace&#39;]]=None,
+        decodeErrorsStderr: Optional[Literal[&#39;strict&#39;, &#39;ignore&#39;, &#39;replace&#39;]]=None
+        ):
+    &#34;&#34;&#34;Runs the given command.
+
+    Parameters:
+
+    * `cmd`: the command, either a list (command with raw args)
+         or a string (subject to shell expansion)
+    * `onError`: what to do if the child process finishes with an exit code different from 0
+        * &#39;raise&#39;: raise an exception (the default)
+        * &#39;die&#39;: terminate the whole process
+        * &#39;ignore&#39;
+    * `input`: string that is send to the stdin of the child process.
+    * `encoding`: the encoding for stdin, stdout, and stderr. If `encoding == &#39;raw&#39;`,
+        then the raw bytes are passed/returned.
+    * `captureStdout` and `captureStderr`: what to do with stdout/stderr of the child process. Possible values:
+        * False: stdout is not captured and goes to stdout of the parent process (the default)
+        * True: stdout is captured and returned
+        * A function: stdout is captured and the result of applying the function to the captured
+          output is returned. Use splitLines as this function to split the output into lines
+        * An existing file descriptor or a file object: stdout goes to the file descriptor or file
+    * `cwd`: working directory
+    * `env`: dictionary with additional environment variables.
+    * `freshEnv`: dictionary with a completely fresh environment.
+    * `decodeErrors`: how to handle decoding errors on stdout and stderr.
+    * `decodeErrorsStdout` and `decodeErrorsStderr`: overwrite the value of decodeErrors for stdout
+        or stderr
+
+    Returns:
+      a `RunResult` value, given access to the captured stdout of the child process (if it was
+      captured at all) and to the exit code of the child process.
+
+    Raises: a `RunError` if `onError=&#39;raise&#39;` and the command terminates with a non-zero exit code.
+
+    Starting with Python 3.5, the `subprocess` module defines a similar function.
+
+    &gt;&gt;&gt; run(&#39;/bin/echo foo&#39;) == RunResult(exitcode=0, stdout=&#39;&#39;)
+    True
+    &gt;&gt;&gt; run(&#39;/bin/echo -n foo&#39;, captureStdout=True) == RunResult(exitcode=0, stdout=&#39;foo&#39;)
+    True
+    &gt;&gt;&gt; run(&#39;/bin/echo -n foo&#39;, captureStdout=lambda s: s + &#39;X&#39;) == \
+        RunResult(exitcode=0, stdout=&#39;fooX&#39;)
+    True
+    &gt;&gt;&gt; run(&#39;/bin/echo foo&#39;, captureStdout=False) == RunResult(exitcode=0, stdout=&#39;&#39;)
+    True
+    &gt;&gt;&gt; run(&#39;cat&#39;, captureStdout=True, input=&#39;blub&#39;) == RunResult(exitcode=0, stdout=&#39;blub&#39;)
+    True
+    &gt;&gt;&gt; try:
+    ...     run(&#39;false&#39;)
+    ...     raise &#39;exception expected&#39;
+    ... except RunError:
+    ...     pass
+    ...
+    &gt;&gt;&gt; run(&#39;false&#39;, onError=&#39;ignore&#39;) == RunResult(exitcode=1, stdout=&#39;&#39;)
+    True
+    &#34;&#34;&#34;
+    if type(cmd) != str and type(cmd) != list:
+        raise ShellError(&#39;cmd parameter must be a string or a list&#39;)
+    if type(cmd) == str:
+        cmd = cmd.replace(&#39;\x00&#39;, &#39; &#39;)
+        cmd = cmd.replace(&#39;\n&#39;, &#39; &#39;)
+    if decodeErrorsStdout is None:
+        decodeErrorsStdout = decodeErrors
+    if decodeErrorsStderr is None:
+        decodeErrorsStderr = decodeErrors
+    stdoutIsFileLike = type(captureStdout) == int or hasattr(captureStdout, &#39;write&#39;)
+    stdoutIsProcFun = not stdoutIsFileLike and hasattr(captureStdout, &#39;__call__&#39;)
+    shouldReturnStdout = (stdoutIsProcFun or
+                            (type(captureStdout) == bool and captureStdout))
+    stdout = None
+    if shouldReturnStdout:
+        stdout = subprocess.PIPE
+    elif stdoutIsFileLike:
+        stdout = captureStdout
+    stdin = None
+    if input:
+        stdin = subprocess.PIPE
+    stderr = None
+    if stderrToStdout:
+        stderr = subprocess.STDOUT
+    elif captureStderr:
+        stderr = subprocess.PIPE
+    input_str = &#39;None&#39;
+    if input:
+        input_str = &#39;&lt;&#39; + str(len(input)) + &#39; characters&gt;&#39;
+        if encoding != &#39;raw&#39;:
+            input = input.encode(encoding)
+    _debug(&#39;Running command &#39; + repr(cmd) + &#39; with captureStdout=&#39; + str(captureStdout) +
+          &#39;, onError=&#39; + onError + &#39;, input=&#39; + input_str)
+    popenEnv = None
+    if env:
+        popenEnv = os.environ.copy()
+        popenEnv.update(env)
+    elif freshEnv:
+        popenEnv = freshEnv.copy()
+        if env:
+            popenEnv.update(env)
+    pipe = subprocess.Popen(
+        cmd, shell=(type(cmd) == str),
+        stdout=stdout, stdin=stdin, stderr=stderr,
+        cwd=cwd, env=popenEnv
+    )
+    (stdoutData, stderrData) = pipe.communicate(input=input)
+    if stdoutData is not None and encoding != &#39;raw&#39;:
+        stdoutData = stdoutData.decode(encoding, errors=decodeErrorsStdout)
+    if stderrData is not None and encoding != &#39;raw&#39;:
+        stderrData = stderrData.decode(encoding, errors=decodeErrorsStderr)
+    exitcode = pipe.returncode
+    if onError == &#39;raise&#39; and exitcode != 0:
+        d = stderrData
+        if stderrToStdout:
+            d = stdoutData
+        err = RunError(cmd, exitcode, d)
+        raise err
+    if onError == &#39;die&#39; and exitcode != 0:
+        sys.exit(exitcode)
+    stdoutRes = stdoutData
+    if stdoutRes is None:
+        stdoutRes = &#39;&#39;
+    if stdoutIsProcFun:
+        stdoutRes = captureStdout(stdoutData)
+    return RunResult(stdoutRes, exitcode)</code></pre>
+</details>
+</dd>
+<dt id="shell.splitExt"><code class="name flex">
+<span>def <span class="ident">splitExt</span></span>(<span>p)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Split the extension from a pathname.</p>
+<p>Extension is everything from the last dot to the end, ignoring
+leading dots.
+Returns "(root, ext)"; ext may be empty.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def splitext(p):
+    p = os.fspath(p)
+    if isinstance(p, bytes):
+        sep = b&#39;/&#39;
+        extsep = b&#39;.&#39;
+    else:
+        sep = &#39;/&#39;
+        extsep = &#39;.&#39;
+    return genericpath._splitext(p, sep, None, extsep)</code></pre>
+</details>
+</dd>
+<dt id="shell.splitLines"><code class="name flex">
+<span>def <span class="ident">splitLines</span></span>(<span>s)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Split on line endings.
+To be used with the <code>captureStdout</code> or <code>captureStderr</code> parameter
+of <code><a title="shell.run" href="#shell.run">run()</a></code>.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def splitLines(s):
+    &#34;&#34;&#34;
+    Split on line endings.
+    To be used with the `captureStdout` or `captureStderr` parameter
+    of `run`.
+    &#34;&#34;&#34;
+    return s.strip().split(&#39;\n&#39;)</code></pre>
+</details>
+</dd>
+<dt id="shell.splitOn"><code class="name flex">
+<span>def <span class="ident">splitOn</span></span>(<span>splitter)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Return a function that splits a string on the given splitter string.</p>
+<p>To be used with the <code>captureStdout</code> or <code>captureStderr</code> parameter
+of <code><a title="shell.run" href="#shell.run">run()</a></code>.</p>
+<p>The function returned filters an empty string at the end of the result list.</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; splitOn('X')(&quot;aXbXcX&quot;)
+['a', 'b', 'c']
+&gt;&gt;&gt; splitOn('X')(&quot;aXbXc&quot;)
+['a', 'b', 'c']
+&gt;&gt;&gt; splitOn('X')(&quot;abc&quot;)
+['abc']
+&gt;&gt;&gt; splitOn('X')(&quot;abcX&quot;)
+['abc']
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def splitOn(splitter):
+    &#34;&#34;&#34;Return a function that splits a string on the given splitter string.
+
+    To be used with the `captureStdout` or `captureStderr` parameter
+    of `run`.
+
+    The function returned filters an empty string at the end of the result list.
+
+    &gt;&gt;&gt; splitOn(&#39;X&#39;)(&#34;aXbXcX&#34;)
+    [&#39;a&#39;, &#39;b&#39;, &#39;c&#39;]
+    &gt;&gt;&gt; splitOn(&#39;X&#39;)(&#34;aXbXc&#34;)
+    [&#39;a&#39;, &#39;b&#39;, &#39;c&#39;]
+    &gt;&gt;&gt; splitOn(&#39;X&#39;)(&#34;abc&#34;)
+    [&#39;abc&#39;]
+    &gt;&gt;&gt; splitOn(&#39;X&#39;)(&#34;abcX&#34;)
+    [&#39;abc&#39;]
+    &#34;&#34;&#34;
+    def f(s):
+        l = s.split(splitter)
+        if l and not l[-1]:
+            return l[:-1]
+        else:
+            return l
+    return f</code></pre>
+</details>
+</dd>
+<dt id="shell.touch"><code class="name flex">
+<span>def <span class="ident">touch</span></span>(<span>path)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Create an empty file at <code>path</code>.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def touch(path):
+    &#34;&#34;&#34;
+    Create an empty file at `path`.
+    &#34;&#34;&#34;
+    run([&#39;touch&#39;, path])</code></pre>
+</details>
+</dd>
+<dt id="shell.writeBinaryFile"><code class="name flex">
+<span>def <span class="ident">writeBinaryFile</span></span>(<span>name, content)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Write binary string <code>content</code> to file <code>name</code>.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def writeBinaryFile(name, content):
+    &#34;&#34;&#34;Write binary string `content` to file `name`.&#34;&#34;&#34;
+    with open(name, &#39;wb&#39;) as f:
+        f.write(content)</code></pre>
+</details>
+</dd>
+<dt id="shell.writeFile"><code class="name flex">
+<span>def <span class="ident">writeFile</span></span>(<span>name, content)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Write text <code>content</code> to file <code>name</code>.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def writeFile(name, content):
+    &#34;&#34;&#34;Write text `content` to file `name`.&#34;&#34;&#34;
+    with open(name, &#39;w&#39;, encoding=&#39;utf-8&#39;) as f:
+        f.write(content)</code></pre>
+</details>
+</dd>
+</dl>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="shell.RunError"><code class="flex name class">
+<span>class <span class="ident">RunError</span></span>
+<span>(</span><span>cmd, exitcode, stderr=None)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>This exception is thrown if a program invoked with <code>run(onError='raise')</code>
+returns a non-zero exit code.</p>
+<p>Attributes:</p>
+<ul>
+<li><code>exitcode</code></li>
+<li><code>stderr</code>: output on stderr (if <code><a title="shell.run" href="#shell.run">run()</a></code> configured to capture this output)</li>
+</ul></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class RunError(ShellError):
+    &#34;&#34;&#34;
+    This exception is thrown if a program invoked with `run(onError=&#39;raise&#39;)`
+    returns a non-zero exit code.
+
+    Attributes:
+
+    * `exitcode`
+    * `stderr`: output on stderr (if `run` configured to capture this output)
+    &#34;&#34;&#34;
+    def __init__(self, cmd, exitcode, stderr=None):
+        self.cmd = cmd
+        self.exitcode = exitcode
+        self.stderr = stderr
+        msg = &#39;Command &#39; + repr(self.cmd) + &#34; failed with exit code &#34; + str(self.exitcode)
+        if stderr:
+            msg = msg + &#39;\nstderr:\n&#39; + str(stderr)
+        super(RunError, self).__init__(msg)</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="shell.ShellError" href="#shell.ShellError">ShellError</a></li>
+<li>builtins.BaseException</li>
+</ul>
+</dd>
+<dt id="shell.RunResult"><code class="flex name class">
+<span>class <span class="ident">RunResult</span></span>
+<span>(</span><span>stdout, exitcode)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Represents the result of running a program using the <code><a title="shell.run" href="#shell.run">run()</a></code> function.
+Attribute <code>exitcode</code> holds the exit code,
+attribute <code>stdout</code> contains the output printed in stdout (only if <code><a title="shell.run" href="#shell.run">run()</a></code>
+was invoked with <code>captureStdout=True</code>).</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class RunResult:
+    &#34;&#34;&#34;Represents the result of running a program using the `run` function.
+    Attribute `exitcode` holds the exit code,
+    attribute `stdout` contains the output printed in stdout (only if `run`
+    was invoked with `captureStdout=True`).
+    &#34;&#34;&#34;
+    def __init__(self, stdout, exitcode):
+        self.stdout = stdout
+        self.exitcode = exitcode
+    def __repr__(self):
+        return &#39;RunResult(exitcode=%d, stdout=%r) &#39;% (self.exitcode, self.stdout)
+    def __eq__(self, other):
+        if type(other) is type(self):
+            return self.__dict__ == other.__dict__
+        return False
+    def __ne__(self, other):
+        return not self.__eq__(other)
+    def __hash__(self):
+        return hash(self.__dict__)</code></pre>
+</details>
+</dd>
+<dt id="shell.ShellError"><code class="flex name class">
+<span>class <span class="ident">ShellError</span></span>
+<span>(</span><span>msg)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>The base class for exceptions thrown by this module.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class ShellError(BaseException):
+    &#34;&#34;&#34;The base class for exceptions thrown by this module.&#34;&#34;&#34;
+    def __init__(self, msg):
+        self.msg = msg
+    def __str__(self):
+        return self.msg</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>builtins.BaseException</li>
+</ul>
+<h3>Subclasses</h3>
+<ul class="hlist">
+<li><a title="shell.RunError" href="#shell.RunError">RunError</a></li>
+</ul>
+</dd>
+<dt id="shell.tempDir"><code class="flex name class">
+<span>class <span class="ident">tempDir</span></span>
+<span>(</span><span>suffix='', prefix='tmp', dir=None, onException=True, delete=True)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Scoped creation of a temporary directory, to be used in a <code>with</code>-block:</p>
+<pre><code>with tempDir() as d:
+    # do something with d
+# d gets deleted at the end of the with-block
+</code></pre>
+<p>Per default, the temporary directory is deleted at the end of the <code>with</code>-block.
+With <code>delete=False</code>, deletion is deactivated. With <code>onException=False</code>, deletion
+is only performed if the <code>with</code>-block finishes without an exception.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class tempDir:
+    &#34;&#34;&#34;
+    Scoped creation of a temporary directory, to be used in a `with`-block:
+
+    ```
+    with tempDir() as d:
+        # do something with d
+    # d gets deleted at the end of the with-block
+    ```
+
+    Per default, the temporary directory is deleted at the end of the `with`-block.
+    With `delete=False`, deletion is deactivated. With `onException=False`, deletion
+    is only performed if the `with`-block finishes without an exception.
+    &#34;&#34;&#34;
+    def __init__(self, suffix=&#39;&#39;, prefix=&#39;tmp&#39;, dir=None, onException=True, delete=True):
+        self.suffix = suffix
+        self.prefix = prefix
+        self.dir = dir
+        self.onException = onException
+        self.delete = delete
+    def __enter__(self):
+        self.dir_to_delete = mkTempDir(suffix=self.suffix,
+                                       prefix=self.prefix,
+                                       dir=self.dir,
+                                       deleteAtExit=False)
+        return self.dir_to_delete
+    def __exit__(self, exc_type, value, traceback):
+        if exc_type is not None and not self.onException:
+            return False # reraise
+        if self.delete:
+            rmdir(self.dir_to_delete, recursive=True)
+        return False # reraise expection</code></pre>
+</details>
+</dd>
+<dt id="shell.workingDir"><code class="flex name class">
+<span>class <span class="ident">workingDir</span></span>
+<span>(</span><span>new_dir)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Scoped change of working directory, to be used in a <code>with</code>-block:</p>
+<pre><code>with workingDir(path):
+    # working directory is now path
+# previous working directory is restored
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class workingDir:
+    &#34;&#34;&#34;
+    Scoped change of working directory, to be used in a `with`-block:
+
+    ```
+    with workingDir(path):
+        # working directory is now path
+    # previous working directory is restored
+    ```
+    &#34;&#34;&#34;
+    def __init__(self, new_dir):
+        self.new_dir = new_dir
+    def __enter__(self):
+        self.old_dir = pwd()
+        cd(self.new_dir)
+    def __exit__(self, exc_type, value, traceback):
+        cd(self.old_dir)
+        return False # reraise expection</code></pre>
+</details>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3><a href="#header-variables">Global variables</a></h3>
+<ul class="">
+<li><code><a title="shell.HOME" href="#shell.HOME">HOME</a></code></li>
+<li><code><a title="shell.TEE_STDERR" href="#shell.TEE_STDERR">TEE_STDERR</a></code></li>
+<li><code><a title="shell.TEE_STDOUT" href="#shell.TEE_STDOUT">TEE_STDOUT</a></code></li>
+<li><code><a title="shell.THIS_DIR" href="#shell.THIS_DIR">THIS_DIR</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="two-column">
+<li><code><a title="shell.abort" href="#shell.abort">abort</a></code></li>
+<li><code><a title="shell.abspath" href="#shell.abspath">abspath</a></code></li>
+<li><code><a title="shell.basename" href="#shell.basename">basename</a></code></li>
+<li><code><a title="shell.cd" href="#shell.cd">cd</a></code></li>
+<li><code><a title="shell.cp" href="#shell.cp">cp</a></code></li>
+<li><code><a title="shell.createTee" href="#shell.createTee">createTee</a></code></li>
+<li><code><a title="shell.dirname" href="#shell.dirname">dirname</a></code></li>
+<li><code><a title="shell.exists" href="#shell.exists">exists</a></code></li>
+<li><code><a title="shell.exit" href="#shell.exit">exit</a></code></li>
+<li><code><a title="shell.expandEnvVars" href="#shell.expandEnvVars">expandEnvVars</a></code></li>
+<li><code><a title="shell.fatal" href="#shell.fatal">fatal</a></code></li>
+<li><code><a title="shell.fileSize" href="#shell.fileSize">fileSize</a></code></li>
+<li><code><a title="shell.filename" href="#shell.filename">filename</a></code></li>
+<li><code><a title="shell.getExt" href="#shell.getExt">getExt</a></code></li>
+<li><code><a title="shell.gnuProg" href="#shell.gnuProg">gnuProg</a></code></li>
+<li><code><a title="shell.isDir" href="#shell.isDir">isDir</a></code></li>
+<li><code><a title="shell.isFile" href="#shell.isFile">isFile</a></code></li>
+<li><code><a title="shell.isLink" href="#shell.isLink">isLink</a></code></li>
+<li><code><a title="shell.listAsArgs" href="#shell.listAsArgs">listAsArgs</a></code></li>
+<li><code><a title="shell.ls" href="#shell.ls">ls</a></code></li>
+<li><code><a title="shell.mergeDicts" href="#shell.mergeDicts">mergeDicts</a></code></li>
+<li><code><a title="shell.mkTempDir" href="#shell.mkTempDir">mkTempDir</a></code></li>
+<li><code><a title="shell.mkTempFile" href="#shell.mkTempFile">mkTempFile</a></code></li>
+<li><code><a title="shell.mkdir" href="#shell.mkdir">mkdir</a></code></li>
+<li><code><a title="shell.mv" href="#shell.mv">mv</a></code></li>
+<li><code><a title="shell.pjoin" href="#shell.pjoin">pjoin</a></code></li>
+<li><code><a title="shell.pwd" href="#shell.pwd">pwd</a></code></li>
+<li><code><a title="shell.quote" href="#shell.quote">quote</a></code></li>
+<li><code><a title="shell.readBinaryFile" href="#shell.readBinaryFile">readBinaryFile</a></code></li>
+<li><code><a title="shell.readFile" href="#shell.readFile">readFile</a></code></li>
+<li><code><a title="shell.removeExt" href="#shell.removeExt">removeExt</a></code></li>
+<li><code><a title="shell.removeFile" href="#shell.removeFile">removeFile</a></code></li>
+<li><code><a title="shell.resolveProg" href="#shell.resolveProg">resolveProg</a></code></li>
+<li><code><a title="shell.rm" href="#shell.rm">rm</a></code></li>
+<li><code><a title="shell.rmdir" href="#shell.rmdir">rmdir</a></code></li>
+<li><code><a title="shell.run" href="#shell.run">run</a></code></li>
+<li><code><a title="shell.splitExt" href="#shell.splitExt">splitExt</a></code></li>
+<li><code><a title="shell.splitLines" href="#shell.splitLines">splitLines</a></code></li>
+<li><code><a title="shell.splitOn" href="#shell.splitOn">splitOn</a></code></li>
+<li><code><a title="shell.touch" href="#shell.touch">touch</a></code></li>
+<li><code><a title="shell.writeBinaryFile" href="#shell.writeBinaryFile">writeBinaryFile</a></code></li>
+<li><code><a title="shell.writeFile" href="#shell.writeFile">writeFile</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="shell.RunError" href="#shell.RunError">RunError</a></code></h4>
+</li>
+<li>
+<h4><code><a title="shell.RunResult" href="#shell.RunResult">RunResult</a></code></h4>
+</li>
+<li>
+<h4><code><a title="shell.ShellError" href="#shell.ShellError">ShellError</a></code></h4>
+</li>
+<li>
+<h4><code><a title="shell.tempDir" href="#shell.tempDir">tempDir</a></code></h4>
+</li>
+<li>
+<h4><code><a title="shell.workingDir" href="#shell.workingDir">workingDir</a></code></h4>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
+</footer>
+</body>
+</html>
