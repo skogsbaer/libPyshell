@@ -15,7 +15,7 @@ setup(name='libPyshell',
       author='Stefan Wehr',
       author_email='stefan.wehr@unknown.invalid',
       url='https://github.com/skogsbaer/libPyshell',
-      package_dir={'pyshell': 'src'},
-      packages=['pyshell'],
+      package_dir={'shell': 'src'},
+      packages=['shell'],
       python_requires='>=3.6'
       )
