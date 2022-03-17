@@ -12,5 +12,6 @@ read
 
 rm -rf dist/
 python3 -m build || exit 1
+rm -rf libPyshell.egg-info
 
 echo "To upload the package to PyPI, execute the following command: twine upload dist/*"
