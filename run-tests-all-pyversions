@@ -1,0 +1,22 @@
+#!/bin/bash
+
+set -e
+
+cd $(dirname $0)
+
+function run()
+{
+    echo
+    echo "Running tests for Python version $PYENV_VERSION"
+    echo
+    ./run-tests
+    echo
+    echo "Finished tests for Python version $PYENV_VERSION"
+    echo
+}
+
+PYENV_VERSION=3.6.12 run
+PYENV_VERSION=3.7.12 run
+PYENV_VERSION=3.8.6 run
+PYENV_VERSION=3.9.7 run
+PYENV_VERSION=3.10.0 run
