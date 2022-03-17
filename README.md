@@ -23,3 +23,8 @@ magicFiles = run(['grep', 'magic'] + files, captureStdout=splitLines, onError='i
 * [API documentation](https://htmlpreview.github.io/?https://github.com/skogsbaer/libPyshell/blob/main/doc/shell.html)
 * [PyPI page](https://pypi.org/project/libPyshell/)
 * Installation: `pip install libPyshell`
+
+## Changelog
+
+* 0.1.4 (2022-03-17)
+  * Flush stdout and stderr before running a command
