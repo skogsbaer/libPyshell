@@ -274,6 +274,11 @@ def run(cmd,
         popenEnv = freshEnv.copy()
         if env:
             popenEnv.update(env)
+    # Ensure correct ordering of outputs
+    if stdout is None:
+        sys.stdout.flush()
+    if stderr is None:
+        sys.stderr.flush()
     pipe = subprocess.Popen(
         cmd, shell=(type(cmd) == str),
         stdout=stdout, stdin=stdin, stderr=stderr,
