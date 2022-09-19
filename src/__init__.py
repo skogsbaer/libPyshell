@@ -163,7 +163,11 @@ def splitLines(s):
     To be used with the `captureStdout` or `captureStderr` parameter
     of `run`.
     """
-    return s.strip().split('\n')
+    s = s.strip()
+    if not s:
+        return []
+    else:
+        return s.split('\n')
 
 def run(cmd,
         onError='raise',
