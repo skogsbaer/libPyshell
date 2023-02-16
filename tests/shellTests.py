@@ -17,6 +17,30 @@ class ShellTest(unittest.TestCase):
             self.assertEqual('Hello World!', s1)
             self.assertEqual('Hello World!', s2)
 
+    def testMv1(self):
+        with shell.tempDir() as d:
+            a = shell.pjoin(d, 'a')
+            b = shell.pjoin(d, 'b')
+            ax = shell.pjoin(a, 'x')
+            shell.mkdir(a)
+            shell.mkdir(b)
+            shell.writeFile(ax, 'abc')
+            shell.mv(ax, b)
+            bx = shell.pjoin(b, 'x')
+            self.assertEqual('abc', shell.readFile(bx))
+
+    def testMv2(self):
+        with shell.tempDir() as d:
+            a = shell.pjoin(d, 'a')
+            b = shell.pjoin(d, 'b')
+            ax = shell.pjoin(a, 'x')
+            bx = shell.pjoin(b, 'x')
+            shell.mkdir(a)
+            shell.mkdir(b)
+            shell.writeFile(ax, 'abc')
+            shell.mv(ax, bx)
+            self.assertEqual('abc', shell.readFile(bx))
+
 if __name__ == "__main__":
     print("Running doctests")
     import doctest

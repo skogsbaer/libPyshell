@@ -390,8 +390,14 @@ expandEnvVars = os.path.expandvars
 #: export
 pjoin = os.path.join
 
-#: export
-mv = os.rename
+def mv(src: str, target: str):
+    """
+    Renames src to target.
+    If target is an existing directory, src is move into target
+    """
+    if isDir(target):
+        target = pjoin(target, basename(src))
+    os.rename(src, target)
 
 def removeFile(path):
     """
