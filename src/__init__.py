@@ -448,6 +448,11 @@ def mkdir(d, mode=0o777, createParents=False):
         os.makedirs(d, mode, exist_ok=True)
     else:
         os.mkdir(d, mode)
+def mkdirs(d, mode=0o777):
+    """
+    Creates directory `d` and all missing parent directories with `mode`.
+    """
+    mkdir(d, mode, createParents=True)
 
 def touch(path):
     """
