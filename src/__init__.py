@@ -63,19 +63,19 @@ def fatal(s):
 def resolveProg(*l):
     """Return the first program in the list that exist and is runnable.
     >>> resolveProg()
-    >>> resolveProg('foobarbaz', 'python', 'grep')
-    'python'
+    >>> resolveProg('foobarbaz', 'cat', 'grep')
+    '/bin/cat'
     >>> resolveProg('foobarbaz', 'padauz')
     """
     for x in l:
-        ecode = run('command -v %s' % quote(x), captureStdout=DEV_NULL,
-                    onError='ignore').exitcode
-        if ecode == 0:
-            return x
+        cmd = 'command -v %s' % quote(x)
+        result = run(cmd, captureStdout=True, onError='ignore')
+        if result.exitcode == 0:
+            return result.stdout.strip()
     return None
 
 def gnuProg(p):
-    """Get the GNU version of progam p."""
+    """Get the GNU version of program p."""
     prog = resolveProg('g' + p, p)
     if not prog:
         raise ShellError('Program ' + str(p) + ' not found at all')
@@ -169,20 +169,20 @@ def splitLines(s):
     else:
         return s.split('\n')
 
-def run(cmd,
-        onError='raise',
-        input=None,
-        encoding='utf-8',
-        captureStdout=False,
-        captureStderr=False,
-        stderrToStdout=False,
-        cwd=None,
-        env=None,
-        freshEnv=None,
-        decodeErrors='replace',
-        decodeErrorsStdout=None,
-        decodeErrorsStderr=None
-        ):
+def run(cmd: Union[list[str], str],
+        onError: Literal['raise', 'die', 'ignore']='raise',
+        input: Optional[str]=None,
+        encoding: str='utf-8',
+        captureStdout: any=False,
+        captureStderr: any=False,
+        stderrToStdout: bool=False,
+        cwd: Optional[str]=None,
+        env: Optional[Dict[str, str]]=None,
+        freshEnv: Optional[Dict[str, str]]=None,
+        decodeErrors: str='replace',
+        decodeErrorsStdout: Optional[str]=None,
+        decodeErrorsStderr: Optional[str]=None
+        ) -> RunResult:
     """Runs the given command.
 
     Parameters:
@@ -192,7 +192,7 @@ def run(cmd,
     * `onError`: what to do if the child process finishes with an exit code different from 0
         * 'raise': raise an exception (the default)
         * 'die': terminate the whole process
-        * 'ignore'
+        * 'ignore': just return the result
     * `input`: string that is send to the stdin of the child process.
     * `encoding`: the encoding for stdin, stdout, and stderr. If `encoding == 'raw'`,
         then the raw bytes are passed/returned.
@@ -202,6 +202,7 @@ def run(cmd,
         * A function: stdout is captured and the result of applying the function to the captured
           output is returned. Use splitLines as this function to split the output into lines
         * An existing file descriptor or a file object: stdout goes to the file descriptor or file
+    * `stderrToStdout`: should stderr be sent to stdout?
     * `cwd`: working directory
     * `env`: dictionary with additional environment variables.
     * `freshEnv`: dictionary with a completely fresh environment.
@@ -624,17 +625,17 @@ def ls(d, *globs):
                     break
     return res
 
-def readBinaryFile(name):
+def readBinaryFile(name: str):
     """Return the binary content of file `name`."""
     with open(name, 'rb') as f:
         return f.read()
 
-def readFile(name):
+def readFile(name: str):
     """Return the textual content of file `name`."""
     with open(name, 'r', encoding='utf-8') as f:
         return f.read()
 
-def writeFile(name, content):
+def writeFile(name: str, content: str):
     """Write text `content` to file `name`."""
     with open(name, 'w', encoding='utf-8') as f:
         f.write(content)
