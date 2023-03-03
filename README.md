@@ -26,5 +26,8 @@ magicFiles = run(['grep', 'magic'] + files, captureStdout=splitLines, onError='i
 
 ## Changelog
 
+* 0.1.5 (2023-03-03)
+  * Some bugfixes
+
 * 0.1.4 (2022-03-17)
   * Flush stdout and stderr before running a command
