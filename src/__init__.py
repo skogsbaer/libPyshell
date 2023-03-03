@@ -354,6 +354,9 @@ dirname = os.path.dirname
 abspath = os.path.abspath
 
 #: export
+realpath = os.path.realpath
+
+#: export
 exists = os.path.exists
 
 isfile = os.path.isfile # DEPRECATED
