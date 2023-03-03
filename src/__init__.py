@@ -545,7 +545,7 @@ _hooks.hook()
 
 def _registerAtExit(action, mode):
     def f():
-        _debug(f'Running exit hook, exit code: {e}, mode: {mode}')
+        _debug(f'Running exit hook, exit code: {_hooks.exitCode}, mode: {mode}')
         if mode is True:
             action()
         elif mode in ['ifSuccess'] and _hooks.isExitSuccess():
@@ -667,7 +667,7 @@ def _openForTee(x):
         if mode == 'w':
             return open(name, 'wb')
         elif mode == 'a':
-            return open(name, 'wa')
+            return open(name, 'ab')
         raise ValueError(f'Bad mode: {mode}')
     elif x == TEE_STDERR:
         return sys.stderr
