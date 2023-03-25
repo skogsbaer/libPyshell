@@ -570,7 +570,10 @@ def mkTempFile(suffix='', prefix='', dir=None, deleteAtExit=True):
 
     f = tempfile.mktemp(suffix, prefix, dir)
     if deleteAtExit:
-        _registerAtExit(lambda: rm(f), deleteAtExit)
+        def action():
+            if isFile(f):
+                rm(f)
+        _registerAtExit(action, deleteAtExit)
     return f
 
 def mkTempDir(suffix='', prefix='tmp', dir=None, deleteAtExit=True):
@@ -579,7 +582,10 @@ def mkTempDir(suffix='', prefix='tmp', dir=None, deleteAtExit=True):
     """
     d = tempfile.mkdtemp(suffix, prefix, dir)
     if deleteAtExit:
-        _registerAtExit(lambda: rmdir(d, True), deleteAtExit)
+        def action():
+            if isDir(d):
+                rmdir(d, True)
+        _registerAtExit(action, deleteAtExit)
     return d
 
 class tempDir:
@@ -612,7 +618,8 @@ class tempDir:
         if exc_type is not None and not self.onException:
             return False # reraise
         if self.delete:
-            rmdir(self.dir_to_delete, recursive=True)
+            if isDir(self.dir_to_delete):
+                rmdir(self.dir_to_delete, recursive=True)
         return False # reraise expection
 
 def ls(d, *globs):
