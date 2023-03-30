@@ -26,6 +26,9 @@ magicFiles = run(['grep', 'magic'] + files, captureStdout=splitLines, onError='i
 
 ## Changelog
 
+* 0.1.7 (2023-03-30)
+  * `force` parameter for `cp`
+
 * 0.1.5 and 0.1.6 (2023-03-03)
   * Some bugfixes
 
