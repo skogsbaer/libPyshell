@@ -417,9 +417,9 @@ def cp(src, target):
 
     * If `src` is a file and `target` is a file: overwrites `target`.
     * If `src` is a file and `target` is a dirname: places the copy in directory `target`,
-      with the name of `src.
+      with the basename of `src.
     * If `src` is a directory then `target` must also be a directory: copies
-      the whole `src` directory to `target`.
+      the `src` directory (*not* its content) to `target`.
     """
     if isFile(src):
         if isDir(target):
@@ -493,10 +493,12 @@ class workingDir:
         cd(self.old_dir)
         return False # reraise expection
 
-def rm(path):
+def rm(path, force=False):
     """
     Remove the file at `path`.
     """
+    if force and not exists(path):
+        return
     os.remove(path)
 
 def rmdir(d, recursive=False):
