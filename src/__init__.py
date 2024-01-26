@@ -632,7 +632,7 @@ def ls(d, *globs):
 
     The pathnames in the result list contain the directory part `d`.
 
-    >>> '../src/shell.py' in ls('../src/', '*.py', '*.txt')
+    >>> '../src/__init__.py' in ls('../src/', '*.py', '*.txt')
     True
     """
     res = []
