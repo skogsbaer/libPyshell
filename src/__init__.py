@@ -50,7 +50,7 @@ except:
 
 DEV_NULL = _devNull
 
-_FILE: TypeAlias = None | int | IO[Any]
+_FILE = Union[int, IO[Any], None]
 
 atexit.register(lambda: DEV_NULL.close())
 
@@ -62,7 +62,7 @@ def fatal(s: str):
     """Display an error message to stderr."""
     sys.stderr.write('ERROR: ' + str(s) + '\n')
 
-def resolveProg(*l: str) -> str | None:
+def resolveProg(*l: str) -> Optional[str]:
     """Return the first program in the list that exist and is runnable.
     >>> resolveProg()
     >>> resolveProg('foobarbaz', 'cat', 'grep')
@@ -125,7 +125,9 @@ class RunError(ShellError):
     * `exitcode`
     * `stderr`: output on stderr (if `run` configured to capture this output)
     """
-    def __init__(self, cmd: str | list[str], exitcode: int, stderr: str|bytes|None=None):
+    def __init__(self, cmd: Union[str, list[str]],
+                 exitcode: int,
+                 stderr: Union[str,bytes,None]=None):
         self.cmd = cmd
         self.exitcode = exitcode
         self.stderr = stderr
@@ -173,10 +175,10 @@ def splitLines(s: str) -> list[str]:
 
 def run(cmd: Union[list[str], str],
         onError: Literal['raise', 'die', 'ignore']='raise',
-        input: str | bytes | None=None,
+        input: Union[str, bytes, None]=None,
         encoding: str='utf-8',
-        captureStdout: bool|Callable[[str|bytes], Any]|_FILE=False,
-        captureStderr: bool|Callable[[str|bytes], Any]|_FILE=False,
+        captureStdout: Union[bool,Callable[[str], Any],_FILE]=False,
+        captureStderr: Union[bool,Callable[[str], Any],_FILE]=False,
         stderrToStdout: bool=False,
         cwd: Optional[str]=None,
         env: Optional[Dict[str, str]]=None,
@@ -203,7 +205,8 @@ def run(cmd: Union[list[str], str],
         * False: stdout is not captured and goes to stdout of the parent process (the default)
         * True: stdout is captured and returned
         * A function: stdout is captured and the result of applying the function to the captured
-          output is returned. Use splitLines as this function to split the output into lines
+          output is returned. In this case, encoding must not be `'raw'`.
+          Use splitLines as this function to split the output into lines
         * An existing file descriptor or a file object: stdout goes to the file descriptor or file
     * `stderrToStdout`: should stderr be sent to stdout?
     * `cwd`: working directory
@@ -268,7 +271,7 @@ def run(cmd: Union[list[str], str],
     elif captureStderr:
         stderr = subprocess.PIPE
     input_str = 'None'
-    inputBytes: bytes | None = None
+    inputBytes: Optional[bytes] = None
     if input and isinstance(input, str):
         input_str = '<' + str(len(input)) + ' characters>'
         if encoding != 'raw':
@@ -314,7 +317,8 @@ def run(cmd: Union[list[str], str],
     stdoutRes = stdoutData
     if not stdoutRes:
         stdoutRes = ''
-    if not stdoutIsFileLike and isinstance(captureStdout, Callable):
+    if not stdoutIsFileLike and isinstance(captureStdout, Callable) and \
+        isinstance(stdoutData, str):
         stdoutRes = captureStdout(stdoutData)
     return RunResult(stdoutRes, exitcode)
 
@@ -531,7 +535,7 @@ class _ExitHooks(object):
         sys.exit = self.exit
         sys.excepthook = self.exc_handler
 
-    def exit(self, code: int|None=0):
+    def exit(self, code: Optional[int]=0):
         if code is None:
             myCode = 0
         elif type(code) != int:
@@ -569,7 +573,9 @@ def _registerAtExit(action: Any, mode: AtExitMode):
             _debug('Not running exit action')
     atexit.register(f)
 
-def mkTempFile(suffix: str='', prefix: str='', dir:str|None=None, deleteAtExit:AtExitMode=True):
+def mkTempFile(suffix: str='', prefix: str='',
+               dir:Optional[str]=None,
+               deleteAtExit:AtExitMode=True):
     """Create a temporary file.
 
     `deleteAtExit` controls if and how the file is deleted once the shell sript terminates.
@@ -589,7 +595,9 @@ def mkTempFile(suffix: str='', prefix: str='', dir:str|None=None, deleteAtExit:A
         _registerAtExit(action, deleteAtExit)
     return f
 
-def mkTempDir(suffix: str='', prefix: str='tmp', dir: str|None=None, deleteAtExit: AtExitMode=True):
+def mkTempDir(suffix: str='', prefix: str='tmp',
+              dir: Optional[str]=None,
+              deleteAtExit: AtExitMode=True):
     """Create a temporary directory. The `deleteAtExit` parameter
     has the same meaning as for `mkTempFile`.
     """
@@ -615,7 +623,7 @@ class tempDir:
     With `delete=False`, deletion is deactivated. With `onException=False`, deletion
     is only performed if the `with`-block finishes without an exception.
     """
-    def __init__(self, suffix: str='', prefix: str='tmp', dir: str|None=None,
+    def __init__(self, suffix: str='', prefix: str='tmp', dir: Optional[str]=None,
                  onException: bool=True, delete: bool=True):
         self.suffix = suffix
         self.prefix = prefix

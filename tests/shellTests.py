@@ -2,6 +2,7 @@ import unittest
 import shell
 import time
 import sys
+from typing import *
 
 class ShellTest(unittest.TestCase):
 
@@ -9,7 +10,8 @@ class ShellTest(unittest.TestCase):
         with shell.tempDir() as d:
             p1 = shell.pjoin(d, "f1.txt")
             p2 = shell.pjoin(d, "f2.txt")
-            with shell.createTee([p1, p2, shell.TEE_STDERR]) as t:
+            l: list[Any] = [p1, p2, shell.TEE_STDERR]
+            with shell.createTee(l) as t:
                 t.write('Hello World!')
             time.sleep(0.1)
             s1 = shell.readFile(p1)
