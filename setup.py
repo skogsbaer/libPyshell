@@ -2,7 +2,7 @@
 
 from distutils.core import setup
 
-VERSION = '0.2.0'
+VERSION = '0.2.1'
 
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
@@ -17,5 +17,5 @@ setup(name='libPyshell',
       url='https://github.com/skogsbaer/libPyshell',
       package_dir={'shell': 'src'},
       packages=['shell'],
-      python_requires='>=3.6'
+      python_requires='>=3.9'
       )
