@@ -79,9 +79,7 @@ import sys
 import atexit
 import tempfile
 import shutil
-import types
 import fnmatch
-import shutil
 from threading import Thread
 import traceback
 from typing import *
@@ -94,36 +92,40 @@ HOME = os.environ.get(&#39;HOME&#39;)
 
 try:
     #: /dev/null
-    DEV_NULL = open(&#39;/dev/null&#39;)
+    _devNull = open(&#39;/dev/null&#39;)
 except:
-    DEV_NULL = open(&#39;nul&#39;)
+    _devNull = open(&#39;nul&#39;)
+
+DEV_NULL = _devNull
+
+_FILE = Union[int, IO[Any], None]
 
 atexit.register(lambda: DEV_NULL.close())
 
-def _debug(s):
+def _debug(s: str):
     if _PYSHELL_DEBUG:
         sys.stderr.write(&#39;[DEBUG] &#39; + str(s) + &#39;\n&#39;)
 
-def fatal(s):
+def fatal(s: str):
     &#34;&#34;&#34;Display an error message to stderr.&#34;&#34;&#34;
     sys.stderr.write(&#39;ERROR: &#39; + str(s) + &#39;\n&#39;)
 
-def resolveProg(*l):
+def resolveProg(*l: str) -&gt; Optional[str]:
     &#34;&#34;&#34;Return the first program in the list that exist and is runnable.
     &gt;&gt;&gt; resolveProg()
-    &gt;&gt;&gt; resolveProg(&#39;foobarbaz&#39;, &#39;python&#39;, &#39;grep&#39;)
-    &#39;python&#39;
+    &gt;&gt;&gt; resolveProg(&#39;foobarbaz&#39;, &#39;cat&#39;, &#39;grep&#39;)
+    &#39;/bin/cat&#39;
     &gt;&gt;&gt; resolveProg(&#39;foobarbaz&#39;, &#39;padauz&#39;)
     &#34;&#34;&#34;
     for x in l:
-        ecode = run(&#39;command -v %s&#39; % quote(x), captureStdout=DEV_NULL,
-                    onError=&#39;ignore&#39;).exitcode
-        if ecode == 0:
-            return x
+        cmd = &#39;command -v %s&#39; % quote(x)
+        result = run(cmd, captureStdout=True, onError=&#39;ignore&#39;)
+        if result.exitcode == 0:
+            return result.stdout.strip()
     return None
 
-def gnuProg(p):
-    &#34;&#34;&#34;Get the GNU version of progam p.&#34;&#34;&#34;
+def gnuProg(p: str):
+    &#34;&#34;&#34;Get the GNU version of program p.&#34;&#34;&#34;
     prog = resolveProg(&#39;g&#39; + p, p)
     if not prog:
         raise ShellError(&#39;Program &#39; + str(p) + &#39; not found at all&#39;)
@@ -140,23 +142,23 @@ class RunResult:
     attribute `stdout` contains the output printed in stdout (only if `run`
     was invoked with `captureStdout=True`).
     &#34;&#34;&#34;
-    def __init__(self, stdout, exitcode):
+    def __init__(self, stdout: Any, exitcode: int):
         self.stdout = stdout
         self.exitcode = exitcode
     def __repr__(self):
         return &#39;RunResult(exitcode=%d, stdout=%r) &#39;% (self.exitcode, self.stdout)
-    def __eq__(self, other):
+    def __eq__(self, other: Any):
         if type(other) is type(self):
             return self.__dict__ == other.__dict__
         return False
-    def __ne__(self, other):
+    def __ne__(self, other: Any):
         return not self.__eq__(other)
     def __hash__(self):
         return hash(self.__dict__)
 
 class ShellError(BaseException):
     &#34;&#34;&#34;The base class for exceptions thrown by this module.&#34;&#34;&#34;
-    def __init__(self, msg):
+    def __init__(self, msg: str):
         self.msg = msg
     def __str__(self):
         return self.msg
@@ -171,7 +173,9 @@ class RunError(ShellError):
     * `exitcode`
     * `stderr`: output on stderr (if `run` configured to capture this output)
     &#34;&#34;&#34;
-    def __init__(self, cmd, exitcode, stderr=None):
+    def __init__(self, cmd: Union[str, list[str]],
+                 exitcode: int,
+                 stderr: Union[str,bytes,None]=None):
         self.cmd = cmd
         self.exitcode = exitcode
         self.stderr = stderr
@@ -180,7 +184,7 @@ class RunError(ShellError):
             msg = msg + &#39;\nstderr:\n&#39; + str(stderr)
         super(RunError, self).__init__(msg)
 
-def splitOn(splitter):
+def splitOn(splitter: str) -&gt; Callable[[str], list[str]]:
     &#34;&#34;&#34;Return a function that splits a string on the given splitter string.
 
     To be used with the `captureStdout` or `captureStderr` parameter
@@ -197,7 +201,7 @@ def splitOn(splitter):
     &gt;&gt;&gt; splitOn(&#39;X&#39;)(&#34;abcX&#34;)
     [&#39;abc&#39;]
     &#34;&#34;&#34;
-    def f(s):
+    def f(s: str) -&gt; list[str]:
         l = s.split(splitter)
         if l and not l[-1]:
             return l[:-1]
@@ -205,28 +209,32 @@ def splitOn(splitter):
             return l
     return f
 
-def splitLines(s):
+def splitLines(s: str) -&gt; list[str]:
     &#34;&#34;&#34;
     Split on line endings.
     To be used with the `captureStdout` or `captureStderr` parameter
     of `run`.
     &#34;&#34;&#34;
-    return s.strip().split(&#39;\n&#39;)
+    s = s.strip()
+    if not s:
+        return []
+    else:
+        return s.split(&#39;\n&#39;)
 
-def run(cmd: Union[str, list[str]],
-        onError: Literal[&#39;raise&#39;, &#39;die&#39;, &#39;ignore&#39;] = &#39;raise&#39;,
-        input: Optional[str]=None,
+def run(cmd: Union[list[str], str],
+        onError: Literal[&#39;raise&#39;, &#39;die&#39;, &#39;ignore&#39;]=&#39;raise&#39;,
+        input: Union[str, bytes, None]=None,
         encoding: str=&#39;utf-8&#39;,
-        captureStdout: Union[bool, Callable, TextIO, BinaryIO]=False,
-        captureStderr: bool=False,
+        captureStdout: Union[bool,Callable[[str], Any],_FILE]=False,
+        captureStderr: Union[bool,Callable[[str], Any],_FILE]=False,
         stderrToStdout: bool=False,
         cwd: Optional[str]=None,
-        env: Optional[dict]=None,
-        freshEnv: Optional[dict]=None,
-        decodeErrors: Literal[&#39;strict&#39;, &#39;ignore&#39;, &#39;replace&#39;]=&#39;replace&#39;,
-        decodeErrorsStdout: Optional[Literal[&#39;strict&#39;, &#39;ignore&#39;, &#39;replace&#39;]]=None,
-        decodeErrorsStderr: Optional[Literal[&#39;strict&#39;, &#39;ignore&#39;, &#39;replace&#39;]]=None
-        ):
+        env: Optional[Dict[str, str]]=None,
+        freshEnv: Optional[Dict[str, str]]=None,
+        decodeErrors: str=&#39;replace&#39;,
+        decodeErrorsStdout: Optional[str]=None,
+        decodeErrorsStderr: Optional[str]=None
+        ) -&gt; RunResult:
     &#34;&#34;&#34;Runs the given command.
 
     Parameters:
@@ -236,16 +244,19 @@ def run(cmd: Union[str, list[str]],
     * `onError`: what to do if the child process finishes with an exit code different from 0
         * &#39;raise&#39;: raise an exception (the default)
         * &#39;die&#39;: terminate the whole process
-        * &#39;ignore&#39;
-    * `input`: string that is send to the stdin of the child process.
+        * &#39;ignore&#39;: just return the result
+    * `input`: string or bytes that is send to the stdin of the child process.
     * `encoding`: the encoding for stdin, stdout, and stderr. If `encoding == &#39;raw&#39;`,
-        then the raw bytes are passed/returned.
+        then the raw bytes are passed/returned. It is an error if input is a string
+        and `encoding == &#39;raw&#39;`
     * `captureStdout` and `captureStderr`: what to do with stdout/stderr of the child process. Possible values:
         * False: stdout is not captured and goes to stdout of the parent process (the default)
         * True: stdout is captured and returned
         * A function: stdout is captured and the result of applying the function to the captured
-          output is returned. Use splitLines as this function to split the output into lines
+          output is returned. In this case, encoding must not be `&#39;raw&#39;`.
+          Use splitLines as this function to split the output into lines
         * An existing file descriptor or a file object: stdout goes to the file descriptor or file
+    * `stderrToStdout`: should stderr be sent to stdout?
     * `cwd`: working directory
     * `env`: dictionary with additional environment variables.
     * `freshEnv`: dictionary with a completely fresh environment.
@@ -290,14 +301,14 @@ def run(cmd: Union[str, list[str]],
         decodeErrorsStdout = decodeErrors
     if decodeErrorsStderr is None:
         decodeErrorsStderr = decodeErrors
-    stdoutIsFileLike = type(captureStdout) == int or hasattr(captureStdout, &#39;write&#39;)
-    stdoutIsProcFun = not stdoutIsFileLike and hasattr(captureStdout, &#39;__call__&#39;)
+    stdoutIsFileLike = isinstance(captureStdout, int) or isinstance(captureStdout, IO)
+    stdoutIsProcFun = not stdoutIsFileLike and isinstance(captureStdout, Callable)
     shouldReturnStdout = (stdoutIsProcFun or
                             (type(captureStdout) == bool and captureStdout))
-    stdout = None
+    stdout: _FILE = None
     if shouldReturnStdout:
         stdout = subprocess.PIPE
-    elif stdoutIsFileLike:
+    elif isinstance(captureStdout, int) or isinstance(captureStdout, IO):
         stdout = captureStdout
     stdin = None
     if input:
@@ -308,10 +319,15 @@ def run(cmd: Union[str, list[str]],
     elif captureStderr:
         stderr = subprocess.PIPE
     input_str = &#39;None&#39;
-    if input:
+    inputBytes: Optional[bytes] = None
+    if input and isinstance(input, str):
         input_str = &#39;&lt;&#39; + str(len(input)) + &#39; characters&gt;&#39;
         if encoding != &#39;raw&#39;:
-            input = input.encode(encoding)
+            inputBytes = input.encode(encoding)
+        else:
+            raise ValueError(&#39;Given str object as input, but encoding is raw&#39;)
+    elif input:
+        inputBytes = input
     _debug(&#39;Running command &#39; + repr(cmd) + &#39; with captureStdout=&#39; + str(captureStdout) +
           &#39;, onError=&#39; + onError + &#39;, input=&#39; + input_str)
     popenEnv = None
@@ -322,15 +338,20 @@ def run(cmd: Union[str, list[str]],
         popenEnv = freshEnv.copy()
         if env:
             popenEnv.update(env)
+    # Ensure correct ordering of outputs
+    if stdout is None:
+        sys.stdout.flush()
+    if stderr is None:
+        sys.stderr.flush()
     pipe = subprocess.Popen(
         cmd, shell=(type(cmd) == str),
         stdout=stdout, stdin=stdin, stderr=stderr,
         cwd=cwd, env=popenEnv
     )
-    (stdoutData, stderrData) = pipe.communicate(input=input)
-    if stdoutData is not None and encoding != &#39;raw&#39;:
+    (stdoutData, stderrData) = pipe.communicate(input=inputBytes)
+    if stdoutData and encoding != &#39;raw&#39;:
         stdoutData = stdoutData.decode(encoding, errors=decodeErrorsStdout)
-    if stderrData is not None and encoding != &#39;raw&#39;:
+    if stderrData and encoding != &#39;raw&#39;:
         stderrData = stderrData.decode(encoding, errors=decodeErrorsStderr)
     exitcode = pipe.returncode
     if onError == &#39;raise&#39; and exitcode != 0:
@@ -342,15 +363,16 @@ def run(cmd: Union[str, list[str]],
     if onError == &#39;die&#39; and exitcode != 0:
         sys.exit(exitcode)
     stdoutRes = stdoutData
-    if stdoutRes is None:
+    if not stdoutRes:
         stdoutRes = &#39;&#39;
-    if stdoutIsProcFun:
+    if not stdoutIsFileLike and isinstance(captureStdout, Callable) and \
+        isinstance(stdoutData, str):
         stdoutRes = captureStdout(stdoutData)
     return RunResult(stdoutRes, exitcode)
 
 # the quote function is stolen from https://hg.python.org/cpython/file/3.5/Lib/shlex.py
 _find_unsafe = re.compile(r&#39;[^\w@%+=:,./-]&#39;).search
-def quote(s):
+def quote(s: str) -&gt; str:
     &#34;&#34;&#34;Return a shell-escaped version of the string `s`.
     &#34;&#34;&#34;
     if not s:
@@ -361,17 +383,17 @@ def quote(s):
     # the string $&#39;b is then quoted as &#39;$&#39;&#34;&#39;&#34;&#39;b&#39;
     return &#34;&#39;&#34; + s.replace(&#34;&#39;&#34;, &#34;&#39;\&#34;&#39;\&#34;&#39;&#34;) + &#34;&#39;&#34;
 
-def listAsArgs(l):
+def listAsArgs(l: list[str]) -&gt; str:
     &#34;&#34;&#34;
     Converts a list of command arguments to a single argument string.
     &#34;&#34;&#34;
     return &#39; &#39;.join([quote(x) for x in l])
 
-def mergeDicts(*l):
+def mergeDicts(*l: dict[Any, Any]) -&gt; dict[Any, Any]:
     &#34;&#34;&#34;
     Merges a list of dictionaries. Useful for e.g. merging environment dictionaries.
     &#34;&#34;&#34;
-    res = {}
+    res: dict[Any, Any] = {}
     for d in l:
         res.update(d)
     return res
@@ -390,6 +412,9 @@ dirname = os.path.dirname
 
 #: export
 abspath = os.path.abspath
+
+#: export
+realpath = os.path.realpath
 
 #: export
 exists = os.path.exists
@@ -414,11 +439,11 @@ splitext = os.path.splitext # DEPRECATED
 #: export
 splitExt = os.path.splitext
 
-def removeExt(p):
+def removeExt(p: str) -&gt; str:
     &#34;&#34;&#34;Removes the extension of a filename.&#34;&#34;&#34;
     return splitext(p)[0]
 
-def getExt(p):
+def getExt(p: str) -&gt; str:
     &#34;&#34;&#34;Returns the extension of a filename.&#34;&#34;&#34;
     return splitext(p)[1]
 
@@ -428,10 +453,16 @@ expandEnvVars = os.path.expandvars
 #: export
 pjoin = os.path.join
 
-#: export
-mv = os.rename
+def mv(src: str, target: str):
+    &#34;&#34;&#34;
+    Renames src to target.
+    If target is an existing directory, src is move into target
+    &#34;&#34;&#34;
+    if isDir(target):
+        target = pjoin(target, basename(src))
+    os.rename(src, target)
 
-def removeFile(path):
+def removeFile(path: str):
     &#34;&#34;&#34;
     Removes the given file. Throws an error if `path` is not a file.
     &#34;&#34;&#34;
@@ -440,15 +471,15 @@ def removeFile(path):
     else:
         raise ShellError(f&#34;{path} is not a file&#34;)
 
-def cp(src, target):
+def cp(src: str, target: str):
     &#34;&#34;&#34;
     Copy `src` to `target`.
 
     * If `src` is a file and `target` is a file: overwrites `target`.
     * If `src` is a file and `target` is a dirname: places the copy in directory `target`,
-      with the name of `src.
+      with the basename of `src.
     * If `src` is a directory then `target` must also be a directory: copies
-      the whole `src` directory to `target`.
+      the `src` directory (*not* its content) to `target`.
     &#34;&#34;&#34;
     if isFile(src):
         if isDir(target):
@@ -462,15 +493,17 @@ def cp(src, target):
             name = basename(src)
             targetDir = pjoin(target, name)
             return shutil.copytree(src, targetDir)
-        else:
+        elif exists(target):
             raise ValueError(f&#39;Cannot copy directory {src} to non-directory {target}&#39;)
+        else:
+            return shutil.copytree(src, target)
 
-def abort(msg):
+def abort(msg: str):
     &#34;&#34;&#34;Print an error message and abort the shell script.&#34;&#34;&#34;
     sys.stderr.write(&#39;ERROR: &#39; + msg + &#39;\n&#39;)
     sys.exit(1)
 
-def mkdir(d, mode=0o777, createParents=False):
+def mkdir(d: str, mode: int=0o777, createParents: bool=False):
     &#34;&#34;&#34;
     Creates directory `d` with `mode`.
     &#34;&#34;&#34;
@@ -479,13 +512,19 @@ def mkdir(d, mode=0o777, createParents=False):
     else:
         os.mkdir(d, mode)
 
-def touch(path):
+def mkdirs(d: str, mode: int=0o777):
+    &#34;&#34;&#34;
+    Creates directory `d` and all missing parent directories with `mode`.
+    &#34;&#34;&#34;
+    mkdir(d, mode, createParents=True)
+
+def touch(path: str):
     &#34;&#34;&#34;
     Create an empty file at `path`.
     &#34;&#34;&#34;
     run([&#39;touch&#39;, path])
 
-def cd(x):
+def cd(x: str):
     &#34;&#34;&#34;Changes the working directory.&#34;&#34;&#34;
     _debug(&#39;Changing directory to &#39; + x)
     os.chdir(x)
@@ -506,22 +545,24 @@ class workingDir:
     # previous working directory is restored
     ```
     &#34;&#34;&#34;
-    def __init__(self, new_dir):
+    def __init__(self, new_dir: str):
         self.new_dir = new_dir
     def __enter__(self):
         self.old_dir = pwd()
         cd(self.new_dir)
-    def __exit__(self, exc_type, value, traceback):
+    def __exit__(self, exc_type: Any, value: Any, traceback: Any):
         cd(self.old_dir)
         return False # reraise expection
 
-def rm(path):
+def rm(path: str, force: bool=False):
     &#34;&#34;&#34;
     Remove the file at `path`.
     &#34;&#34;&#34;
+    if force and not exists(path):
+        return
     os.remove(path)
 
-def rmdir(d, recursive=False):
+def rmdir(d: str, recursive: bool=False):
     &#34;&#34;&#34;
     Remove directory `d`. Set `recursive=True` if the directory is not empty.
     &#34;&#34;&#34;
@@ -542,7 +583,7 @@ class _ExitHooks(object):
         sys.exit = self.exit
         sys.excepthook = self.exc_handler
 
-    def exit(self, code=0):
+    def exit(self, code: Optional[int]=0):
         if code is None:
             myCode = 0
         elif type(code) != int:
@@ -552,7 +593,7 @@ class _ExitHooks(object):
         self.exitCode = myCode
         self._origExit(code)
 
-    def exc_handler(self, exc_type, exc, *args):
+    def exc_handler(self, exc_type: Any, exc: Any, *args: Any):
         self.exception = exc
         self._origExcHandler(exc_type, exc, *args)
 
@@ -565,9 +606,11 @@ class _ExitHooks(object):
 _hooks = _ExitHooks()
 _hooks.hook()
 
-def _registerAtExit(action, mode):
+AtExitMode = Literal[True, False, &#39;ifSuccess&#39;, &#39;ifFailure&#39;]
+
+def _registerAtExit(action: Any, mode: AtExitMode):
     def f():
-        _debug(f&#39;Running exit hook, exit code: {e}, mode: {mode}&#39;)
+        _debug(f&#39;Running exit hook, exit code: {_hooks.exitCode}, mode: {mode}&#39;)
         if mode is True:
             action()
         elif mode in [&#39;ifSuccess&#39;] and _hooks.isExitSuccess():
@@ -578,7 +621,9 @@ def _registerAtExit(action, mode):
             _debug(&#39;Not running exit action&#39;)
     atexit.register(f)
 
-def mkTempFile(suffix=&#39;&#39;, prefix=&#39;&#39;, dir=None, deleteAtExit=True):
+def mkTempFile(suffix: str=&#39;&#39;, prefix: str=&#39;&#39;,
+               dir:Optional[str]=None,
+               deleteAtExit:AtExitMode=True):
     &#34;&#34;&#34;Create a temporary file.
 
     `deleteAtExit` controls if and how the file is deleted once the shell sript terminates.
@@ -592,16 +637,24 @@ def mkTempFile(suffix=&#39;&#39;, prefix=&#39;&#39;, dir=None, deleteAtExit=True
 
     f = tempfile.mktemp(suffix, prefix, dir)
     if deleteAtExit:
-        _registerAtExit(lambda: rm(f), deleteAtExit)
+        def action():
+            if isFile(f):
+                rm(f)
+        _registerAtExit(action, deleteAtExit)
     return f
 
-def mkTempDir(suffix=&#39;&#39;, prefix=&#39;tmp&#39;, dir=None, deleteAtExit=True):
+def mkTempDir(suffix: str=&#39;&#39;, prefix: str=&#39;tmp&#39;,
+              dir: Optional[str]=None,
+              deleteAtExit: AtExitMode=True):
     &#34;&#34;&#34;Create a temporary directory. The `deleteAtExit` parameter
     has the same meaning as for `mkTempFile`.
     &#34;&#34;&#34;
     d = tempfile.mkdtemp(suffix, prefix, dir)
     if deleteAtExit:
-        _registerAtExit(lambda: rmdir(d, True), deleteAtExit)
+        def action():
+            if isDir(d):
+                rmdir(d, True)
+        _registerAtExit(action, deleteAtExit)
     return d
 
 class tempDir:
@@ -618,7 +671,8 @@ class tempDir:
     With `delete=False`, deletion is deactivated. With `onException=False`, deletion
     is only performed if the `with`-block finishes without an exception.
     &#34;&#34;&#34;
-    def __init__(self, suffix=&#39;&#39;, prefix=&#39;tmp&#39;, dir=None, onException=True, delete=True):
+    def __init__(self, suffix: str=&#39;&#39;, prefix: str=&#39;tmp&#39;, dir: Optional[str]=None,
+                 onException: bool=True, delete: bool=True):
         self.suffix = suffix
         self.prefix = prefix
         self.dir = dir
@@ -630,14 +684,15 @@ class tempDir:
                                        dir=self.dir,
                                        deleteAtExit=False)
         return self.dir_to_delete
-    def __exit__(self, exc_type, value, traceback):
+    def __exit__(self, exc_type: Any, value: Any, traceback: Any):
         if exc_type is not None and not self.onException:
             return False # reraise
         if self.delete:
-            rmdir(self.dir_to_delete, recursive=True)
+            if isDir(self.dir_to_delete):
+                rmdir(self.dir_to_delete, recursive=True)
         return False # reraise expection
 
-def ls(d, *globs):
+def ls(d: str, *globs: str) -&gt; list[str]:
     &#34;&#34;&#34;
     Returns a list of pathnames contained in `d`, matching any of the the given `globs`.
 
@@ -645,10 +700,10 @@ def ls(d, *globs):
 
     The pathnames in the result list contain the directory part `d`.
 
-    &gt;&gt;&gt; &#39;../src/shell.py&#39; in ls(&#39;../src/&#39;, &#39;*.py&#39;, &#39;*.txt&#39;)
+    &gt;&gt;&gt; &#39;../src/__init__.py&#39; in ls(&#39;../src/&#39;, &#39;*.py&#39;, &#39;*.txt&#39;)
     True
     &#34;&#34;&#34;
-    res = []
+    res: list[str] = []
     if not d:
         d = &#39;.&#39;
     for f in os.listdir(d):
@@ -661,35 +716,36 @@ def ls(d, *globs):
                     break
     return res
 
-def readBinaryFile(name):
+def readBinaryFile(name: str):
     &#34;&#34;&#34;Return the binary content of file `name`.&#34;&#34;&#34;
     with open(name, &#39;rb&#39;) as f:
         return f.read()
 
-def readFile(name):
+def readFile(name: str):
     &#34;&#34;&#34;Return the textual content of file `name`.&#34;&#34;&#34;
     with open(name, &#39;r&#39;, encoding=&#39;utf-8&#39;) as f:
         return f.read()
 
-def writeFile(name, content):
+def writeFile(name: str, content: str):
     &#34;&#34;&#34;Write text `content` to file `name`.&#34;&#34;&#34;
     with open(name, &#39;w&#39;, encoding=&#39;utf-8&#39;) as f:
         f.write(content)
 
-def writeBinaryFile(name, content):
+def writeBinaryFile(name: str, content: bytes):
     &#34;&#34;&#34;Write binary string `content` to file `name`.&#34;&#34;&#34;
     with open(name, &#39;wb&#39;) as f:
         f.write(content)
 
-def _openForTee(x):
+def _openForTee(x: Any) -&gt; _FILE:
     if type(x) == str:
         return open(x, &#39;wb&#39;)
     elif type(x) == tuple:
-        (name, mode) = x
+        name: Any = x[0]
+        mode: Any = x[1]
         if mode == &#39;w&#39;:
             return open(name, &#39;wb&#39;)
         elif mode == &#39;a&#39;:
-            return open(name, &#39;wa&#39;)
+            return open(name, &#39;ab&#39;)
         raise ValueError(f&#39;Bad mode: {mode}&#39;)
     elif x == TEE_STDERR:
         return sys.stderr
@@ -698,9 +754,9 @@ def _openForTee(x):
     else:
         raise ValueError(f&#39;Invalid file argument: {x}&#39;)
 
-def _teeChildWorker(pRead, pWrite, fileNames, bufferSize):
+def _teeChildWorker(pRead: Any, pWrite: Any, fileNames: Any, bufferSize: int):
     _debug(&#39;child of tee started&#39;)
-    files = []
+    files: list[Any] = []
     try:
         for x in fileNames:
             files.append(_openForTee(x))
@@ -732,7 +788,7 @@ def _teeChildWorker(pRead, pWrite, fileNames, bufferSize):
             _debug(f&#39;Closed {f}&#39;)
         _debug(&#39;child of tee finished&#39;)
 
-def _teeChild(pRead, pWrite, files, bufferSize):
+def _teeChild(pRead: Any, pWrite: Any, files: Any, bufferSize: Any):
     try:
         _teeChildWorker(pRead, pWrite, files, bufferSize)
     except:
@@ -746,7 +802,7 @@ TEE_STDOUT = object()
 #: Special value for `createTee`.
 TEE_STDERR = object()
 
-def createTee(files, bufferSize=128):
+def createTee(files: list[Any], bufferSize: int=128):
         &#34;&#34;&#34;Get a file object that will mirror writes across multiple files.
         The result can be used for the `captureStdout` or `captureStderr` parameter
         of `run` to mimic the behavior of the `tee` command.
@@ -769,7 +825,7 @@ def createTee(files, bufferSize=128):
         p.start()
         return os.fdopen(pWrite,&#39;w&#39;)
 
-def exit(code):
+def exit(code: int):
     &#34;&#34;&#34;Exit the program with the given exit `code`.
     &#34;&#34;&#34;
     sys.exit(code)
@@ -805,7 +861,7 @@ fileSize = os.path.getsize</code></pre>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
 <dt id="shell.abort"><code class="name flex">
-<span>def <span class="ident">abort</span></span>(<span>msg)</span>
+<span>def <span class="ident">abort</span></span>(<span>msg: str)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Print an error message and abort the shell script.</p></div>
@@ -813,7 +869,7 @@ fileSize = os.path.getsize</code></pre>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def abort(msg):
+<pre><code class="python">def abort(msg: str):
     &#34;&#34;&#34;Print an error message and abort the shell script.&#34;&#34;&#34;
     sys.stderr.write(&#39;ERROR: &#39; + msg + &#39;\n&#39;)
     sys.exit(1)</code></pre>
@@ -824,41 +880,15 @@ fileSize = os.path.getsize</code></pre>
 </code></dt>
 <dd>
 <div class="desc"><p>Return an absolute path.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def abspath(path):
-    &#34;&#34;&#34;Return an absolute path.&#34;&#34;&#34;
-    path = os.fspath(path)
-    if not isabs(path):
-        if isinstance(path, bytes):
-            cwd = os.getcwdb()
-        else:
-            cwd = os.getcwd()
-        path = join(cwd, path)
-    return normpath(path)</code></pre>
-</details>
 </dd>
 <dt id="shell.basename"><code class="name flex">
 <span>def <span class="ident">basename</span></span>(<span>p)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Returns the final component of a pathname</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def basename(p):
-    &#34;&#34;&#34;Returns the final component of a pathname&#34;&#34;&#34;
-    p = os.fspath(p)
-    sep = _get_sep(p)
-    i = p.rfind(sep) + 1
-    return p[i:]</code></pre>
-</details>
 </dd>
 <dt id="shell.cd"><code class="name flex">
-<span>def <span class="ident">cd</span></span>(<span>x)</span>
+<span>def <span class="ident">cd</span></span>(<span>x: str)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Changes the working directory.</p></div>
@@ -866,37 +896,37 @@ fileSize = os.path.getsize</code></pre>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def cd(x):
+<pre><code class="python">def cd(x: str):
     &#34;&#34;&#34;Changes the working directory.&#34;&#34;&#34;
     _debug(&#39;Changing directory to &#39; + x)
     os.chdir(x)</code></pre>
 </details>
 </dd>
 <dt id="shell.cp"><code class="name flex">
-<span>def <span class="ident">cp</span></span>(<span>src, target)</span>
+<span>def <span class="ident">cp</span></span>(<span>src: str, target: str)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Copy <code>src</code> to <code>target</code>.</p>
 <ul>
 <li>If <code>src</code> is a file and <code>target</code> is a file: overwrites <code>target</code>.</li>
 <li>If <code>src</code> is a file and <code>target</code> is a dirname: places the copy in directory <code>target</code>,
-with the name of `src.</li>
+with the basename of `src.</li>
 <li>If <code>src</code> is a directory then <code>target</code> must also be a directory: copies
-the whole <code>src</code> directory to <code>target</code>.</li>
+the <code>src</code> directory (<em>not</em> its content) to <code>target</code>.</li>
 </ul></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def cp(src, target):
+<pre><code class="python">def cp(src: str, target: str):
     &#34;&#34;&#34;
     Copy `src` to `target`.
 
     * If `src` is a file and `target` is a file: overwrites `target`.
     * If `src` is a file and `target` is a dirname: places the copy in directory `target`,
-      with the name of `src.
+      with the basename of `src.
     * If `src` is a directory then `target` must also be a directory: copies
-      the whole `src` directory to `target`.
+      the `src` directory (*not* its content) to `target`.
     &#34;&#34;&#34;
     if isFile(src):
         if isDir(target):
@@ -910,12 +940,14 @@ the whole <code>src</code> directory to <code>target</code>.</li>
             name = basename(src)
             targetDir = pjoin(target, name)
             return shutil.copytree(src, targetDir)
+        elif exists(target):
+            raise ValueError(f&#39;Cannot copy directory {src} to non-directory {target}&#39;)
         else:
-            raise ValueError(f&#39;Cannot copy directory {src} to non-directory {target}&#39;)</code></pre>
+            return shutil.copytree(src, target)</code></pre>
 </details>
 </dd>
 <dt id="shell.createTee"><code class="name flex">
-<span>def <span class="ident">createTee</span></span>(<span>files, bufferSize=128)</span>
+<span>def <span class="ident">createTee</span></span>(<span>files: list[typing.Any], bufferSize: int = 128)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Get a file object that will mirror writes across multiple files.
@@ -943,7 +975,7 @@ resulting file object and the list of files.</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def createTee(files, bufferSize=128):
+<pre><code class="python">def createTee(files: list[Any], bufferSize: int=128):
         &#34;&#34;&#34;Get a file object that will mirror writes across multiple files.
         The result can be used for the `captureStdout` or `captureStderr` parameter
         of `run` to mimic the behavior of the `tee` command.
@@ -972,20 +1004,6 @@ resulting file object and the list of files.</p>
 </code></dt>
 <dd>
 <div class="desc"><p>Returns the directory component of a pathname</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def dirname(p):
-    &#34;&#34;&#34;Returns the directory component of a pathname&#34;&#34;&#34;
-    p = os.fspath(p)
-    sep = _get_sep(p)
-    i = p.rfind(sep) + 1
-    head = p[:i]
-    if head and head != sep*len(head):
-        head = head.rstrip(sep)
-    return head</code></pre>
-</details>
 </dd>
 <dt id="shell.exists"><code class="name flex">
 <span>def <span class="ident">exists</span></span>(<span>path)</span>
@@ -993,21 +1011,9 @@ resulting file object and the list of files.</p>
 <dd>
 <div class="desc"><p>Test whether a path exists.
 Returns False for broken symbolic links</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def exists(path):
-    &#34;&#34;&#34;Test whether a path exists.  Returns False for broken symbolic links&#34;&#34;&#34;
-    try:
-        os.stat(path)
-    except (OSError, ValueError):
-        return False
-    return True</code></pre>
-</details>
 </dd>
 <dt id="shell.exit"><code class="name flex">
-<span>def <span class="ident">exit</span></span>(<span>code)</span>
+<span>def <span class="ident">exit</span></span>(<span>code: int)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Exit the program with the given exit <code>code</code>.</p></div>
@@ -1015,7 +1021,7 @@ Returns False for broken symbolic links</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def exit(code):
+<pre><code class="python">def exit(code: int):
     &#34;&#34;&#34;Exit the program with the given exit `code`.
     &#34;&#34;&#34;
     sys.exit(code)</code></pre>
@@ -1028,61 +1034,9 @@ Returns False for broken symbolic links</p></div>
 <div class="desc"><p>Expand shell variables of form $var and ${var}.
 Unknown variables
 are left unchanged.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def expandvars(path):
-    &#34;&#34;&#34;Expand shell variables of form $var and ${var}.  Unknown variables
-    are left unchanged.&#34;&#34;&#34;
-    path = os.fspath(path)
-    global _varprog, _varprogb
-    if isinstance(path, bytes):
-        if b&#39;$&#39; not in path:
-            return path
-        if not _varprogb:
-            import re
-            _varprogb = re.compile(br&#39;\$(\w+|\{[^}]*\})&#39;, re.ASCII)
-        search = _varprogb.search
-        start = b&#39;{&#39;
-        end = b&#39;}&#39;
-        environ = getattr(os, &#39;environb&#39;, None)
-    else:
-        if &#39;$&#39; not in path:
-            return path
-        if not _varprog:
-            import re
-            _varprog = re.compile(r&#39;\$(\w+|\{[^}]*\})&#39;, re.ASCII)
-        search = _varprog.search
-        start = &#39;{&#39;
-        end = &#39;}&#39;
-        environ = os.environ
-    i = 0
-    while True:
-        m = search(path, i)
-        if not m:
-            break
-        i, j = m.span(0)
-        name = m.group(1)
-        if name.startswith(start) and name.endswith(end):
-            name = name[1:-1]
-        try:
-            if environ is None:
-                value = os.fsencode(os.environ[os.fsdecode(name)])
-            else:
-                value = environ[name]
-        except KeyError:
-            i = j
-        else:
-            tail = path[j:]
-            path = path[:i] + value
-            i = len(path)
-            path += tail
-    return path</code></pre>
-</details>
 </dd>
 <dt id="shell.fatal"><code class="name flex">
-<span>def <span class="ident">fatal</span></span>(<span>s)</span>
+<span>def <span class="ident">fatal</span></span>(<span>s: str)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Display an error message to stderr.</p></div>
@@ -1090,7 +1044,7 @@ are left unchanged.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def fatal(s):
+<pre><code class="python">def fatal(s: str):
     &#34;&#34;&#34;Display an error message to stderr.&#34;&#34;&#34;
     sys.stderr.write(&#39;ERROR: &#39; + str(s) + &#39;\n&#39;)</code></pre>
 </details>
@@ -1100,34 +1054,15 @@ are left unchanged.</p></div>
 </code></dt>
 <dd>
 <div class="desc"><p>Return the size of a file, reported by os.stat().</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def getsize(filename):
-    &#34;&#34;&#34;Return the size of a file, reported by os.stat().&#34;&#34;&#34;
-    return os.stat(filename).st_size</code></pre>
-</details>
 </dd>
 <dt id="shell.filename"><code class="name flex">
 <span>def <span class="ident">filename</span></span>(<span>p)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Returns the final component of a pathname</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def basename(p):
-    &#34;&#34;&#34;Returns the final component of a pathname&#34;&#34;&#34;
-    p = os.fspath(p)
-    sep = _get_sep(p)
-    i = p.rfind(sep) + 1
-    return p[i:]</code></pre>
-</details>
 </dd>
 <dt id="shell.getExt"><code class="name flex">
-<span>def <span class="ident">getExt</span></span>(<span>p)</span>
+<span>def <span class="ident">getExt</span></span>(<span>p: str) ‑> str</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Returns the extension of a filename.</p></div>
@@ -1135,22 +1070,22 @@ are left unchanged.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def getExt(p):
+<pre><code class="python">def getExt(p: str) -&gt; str:
     &#34;&#34;&#34;Returns the extension of a filename.&#34;&#34;&#34;
     return splitext(p)[1]</code></pre>
 </details>
 </dd>
 <dt id="shell.gnuProg"><code class="name flex">
-<span>def <span class="ident">gnuProg</span></span>(<span>p)</span>
+<span>def <span class="ident">gnuProg</span></span>(<span>p: str)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Get the GNU version of progam p.</p></div>
+<div class="desc"><p>Get the GNU version of program p.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def gnuProg(p):
-    &#34;&#34;&#34;Get the GNU version of progam p.&#34;&#34;&#34;
+<pre><code class="python">def gnuProg(p: str):
+    &#34;&#34;&#34;Get the GNU version of program p.&#34;&#34;&#34;
     prog = resolveProg(&#39;g&#39; + p, p)
     if not prog:
         raise ShellError(&#39;Program &#39; + str(p) + &#39; not found at all&#39;)
@@ -1167,57 +1102,21 @@ are left unchanged.</p></div>
 </code></dt>
 <dd>
 <div class="desc"><p>Return true if the pathname refers to an existing directory.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def isdir(s):
-    &#34;&#34;&#34;Return true if the pathname refers to an existing directory.&#34;&#34;&#34;
-    try:
-        st = os.stat(s)
-    except (OSError, ValueError):
-        return False
-    return stat.S_ISDIR(st.st_mode)</code></pre>
-</details>
 </dd>
 <dt id="shell.isFile"><code class="name flex">
 <span>def <span class="ident">isFile</span></span>(<span>path)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test whether a path is a regular file</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def isfile(path):
-    &#34;&#34;&#34;Test whether a path is a regular file&#34;&#34;&#34;
-    try:
-        st = os.stat(path)
-    except (OSError, ValueError):
-        return False
-    return stat.S_ISREG(st.st_mode)</code></pre>
-</details>
 </dd>
 <dt id="shell.isLink"><code class="name flex">
 <span>def <span class="ident">isLink</span></span>(<span>path)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test whether a path is a symbolic link</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def islink(path):
-    &#34;&#34;&#34;Test whether a path is a symbolic link&#34;&#34;&#34;
-    try:
-        st = os.lstat(path)
-    except (OSError, ValueError, AttributeError):
-        return False
-    return stat.S_ISLNK(st.st_mode)</code></pre>
-</details>
 </dd>
 <dt id="shell.listAsArgs"><code class="name flex">
-<span>def <span class="ident">listAsArgs</span></span>(<span>l)</span>
+<span>def <span class="ident">listAsArgs</span></span>(<span>l: list[str]) ‑> str</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Converts a list of command arguments to a single argument string.</p></div>
@@ -1225,7 +1124,7 @@ are left unchanged.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def listAsArgs(l):
+<pre><code class="python">def listAsArgs(l: list[str]) -&gt; str:
     &#34;&#34;&#34;
     Converts a list of command arguments to a single argument string.
     &#34;&#34;&#34;
@@ -1233,20 +1132,20 @@ are left unchanged.</p></div>
 </details>
 </dd>
 <dt id="shell.ls"><code class="name flex">
-<span>def <span class="ident">ls</span></span>(<span>d, *globs)</span>
+<span>def <span class="ident">ls</span></span>(<span>d: str, *globs: str) ‑> list[str]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Returns a list of pathnames contained in <code>d</code>, matching any of the the given <code>globs</code>.</p>
 <p>If no globs are given, all files are returned.</p>
 <p>The pathnames in the result list contain the directory part <code>d</code>.</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; '../src/shell.py' in ls('../src/', '*.py', '*.txt')
+<pre><code class="language-python-repl">&gt;&gt;&gt; '../src/__init__.py' in ls('../src/', '*.py', '*.txt')
 True
 </code></pre></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def ls(d, *globs):
+<pre><code class="python">def ls(d: str, *globs: str) -&gt; list[str]:
     &#34;&#34;&#34;
     Returns a list of pathnames contained in `d`, matching any of the the given `globs`.
 
@@ -1254,10 +1153,10 @@ True
 
     The pathnames in the result list contain the directory part `d`.
 
-    &gt;&gt;&gt; &#39;../src/shell.py&#39; in ls(&#39;../src/&#39;, &#39;*.py&#39;, &#39;*.txt&#39;)
+    &gt;&gt;&gt; &#39;../src/__init__.py&#39; in ls(&#39;../src/&#39;, &#39;*.py&#39;, &#39;*.txt&#39;)
     True
     &#34;&#34;&#34;
-    res = []
+    res: list[str] = []
     if not d:
         d = &#39;.&#39;
     for f in os.listdir(d):
@@ -1272,7 +1171,7 @@ True
 </details>
 </dd>
 <dt id="shell.mergeDicts"><code class="name flex">
-<span>def <span class="ident">mergeDicts</span></span>(<span>*l)</span>
+<span>def <span class="ident">mergeDicts</span></span>(<span>*l: dict[typing.Any, typing.Any]) ‑> dict[typing.Any, typing.Any]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Merges a list of dictionaries. Useful for e.g. merging environment dictionaries.</p></div>
@@ -1280,18 +1179,18 @@ True
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def mergeDicts(*l):
+<pre><code class="python">def mergeDicts(*l: dict[Any, Any]) -&gt; dict[Any, Any]:
     &#34;&#34;&#34;
     Merges a list of dictionaries. Useful for e.g. merging environment dictionaries.
     &#34;&#34;&#34;
-    res = {}
+    res: dict[Any, Any] = {}
     for d in l:
         res.update(d)
     return res</code></pre>
 </details>
 </dd>
 <dt id="shell.mkTempDir"><code class="name flex">
-<span>def <span class="ident">mkTempDir</span></span>(<span>suffix='', prefix='tmp', dir=None, deleteAtExit=True)</span>
+<span>def <span class="ident">mkTempDir</span></span>(<span>suffix: str = '', prefix: str = 'tmp', dir: Optional[str] = None, deleteAtExit: Literal[True, False, 'ifSuccess', 'ifFailure'] = True)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Create a temporary directory. The <code>deleteAtExit</code> parameter
@@ -1300,18 +1199,23 @@ has the same meaning as for <code><a title="shell.mkTempFile" href="#shell.mkTem
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def mkTempDir(suffix=&#39;&#39;, prefix=&#39;tmp&#39;, dir=None, deleteAtExit=True):
+<pre><code class="python">def mkTempDir(suffix: str=&#39;&#39;, prefix: str=&#39;tmp&#39;,
+              dir: Optional[str]=None,
+              deleteAtExit: AtExitMode=True):
     &#34;&#34;&#34;Create a temporary directory. The `deleteAtExit` parameter
     has the same meaning as for `mkTempFile`.
     &#34;&#34;&#34;
     d = tempfile.mkdtemp(suffix, prefix, dir)
     if deleteAtExit:
-        _registerAtExit(lambda: rmdir(d, True), deleteAtExit)
+        def action():
+            if isDir(d):
+                rmdir(d, True)
+        _registerAtExit(action, deleteAtExit)
     return d</code></pre>
 </details>
 </dd>
 <dt id="shell.mkTempFile"><code class="name flex">
-<span>def <span class="ident">mkTempFile</span></span>(<span>suffix='', prefix='', dir=None, deleteAtExit=True)</span>
+<span>def <span class="ident">mkTempFile</span></span>(<span>suffix: str = '', prefix: str = '', dir: Optional[str] = None, deleteAtExit: Literal[True, False, 'ifSuccess', 'ifFailure'] = True)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Create a temporary file.</p>
@@ -1326,7 +1230,9 @@ It has one of the following values.</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def mkTempFile(suffix=&#39;&#39;, prefix=&#39;&#39;, dir=None, deleteAtExit=True):
+<pre><code class="python">def mkTempFile(suffix: str=&#39;&#39;, prefix: str=&#39;&#39;,
+               dir:Optional[str]=None,
+               deleteAtExit:AtExitMode=True):
     &#34;&#34;&#34;Create a temporary file.
 
     `deleteAtExit` controls if and how the file is deleted once the shell sript terminates.
@@ -1340,12 +1246,15 @@ It has one of the following values.</p>
 
     f = tempfile.mktemp(suffix, prefix, dir)
     if deleteAtExit:
-        _registerAtExit(lambda: rm(f), deleteAtExit)
+        def action():
+            if isFile(f):
+                rm(f)
+        _registerAtExit(action, deleteAtExit)
     return f</code></pre>
 </details>
 </dd>
 <dt id="shell.mkdir"><code class="name flex">
-<span>def <span class="ident">mkdir</span></span>(<span>d, mode=511, createParents=False)</span>
+<span>def <span class="ident">mkdir</span></span>(<span>d: str, mode: int = 511, createParents: bool = False)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Creates directory <code>d</code> with <code>mode</code>.</p></div>
@@ -1353,7 +1262,7 @@ It has one of the following values.</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def mkdir(d, mode=0o777, createParents=False):
+<pre><code class="python">def mkdir(d: str, mode: int=0o777, createParents: bool=False):
     &#34;&#34;&#34;
     Creates directory `d` with `mode`.
     &#34;&#34;&#34;
@@ -1363,16 +1272,41 @@ It has one of the following values.</p>
         os.mkdir(d, mode)</code></pre>
 </details>
 </dd>
-<dt id="shell.mv"><code class="name flex">
-<span>def <span class="ident">mv</span></span>(<span>src, dst, *, src_dir_fd=None, dst_dir_fd=None)</span>
+<dt id="shell.mkdirs"><code class="name flex">
+<span>def <span class="ident">mkdirs</span></span>(<span>d: str, mode: int = 511)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Rename a file or directory.</p>
-<p>If either src_dir_fd or dst_dir_fd is not None, it should be a file
-descriptor open to a directory, and the respective path string (src or dst)
-should be relative; the path will then be relative to that directory.
-src_dir_fd and dst_dir_fd, may not be implemented on your platform.
-If they are unavailable, using them will raise a NotImplementedError.</p></div>
+<div class="desc"><p>Creates directory <code>d</code> and all missing parent directories with <code>mode</code>.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def mkdirs(d: str, mode: int=0o777):
+    &#34;&#34;&#34;
+    Creates directory `d` and all missing parent directories with `mode`.
+    &#34;&#34;&#34;
+    mkdir(d, mode, createParents=True)</code></pre>
+</details>
+</dd>
+<dt id="shell.mv"><code class="name flex">
+<span>def <span class="ident">mv</span></span>(<span>src: str, target: str)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Renames src to target.
+If target is an existing directory, src is move into target</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def mv(src: str, target: str):
+    &#34;&#34;&#34;
+    Renames src to target.
+    If target is an existing directory, src is move into target
+    &#34;&#34;&#34;
+    if isDir(target):
+        target = pjoin(target, basename(src))
+    os.rename(src, target)</code></pre>
+</details>
 </dd>
 <dt id="shell.pjoin"><code class="name flex">
 <span>def <span class="ident">pjoin</span></span>(<span>a, *p)</span>
@@ -1383,33 +1317,6 @@ If any component is an absolute path, all previous path components
 will be discarded.
 An empty last part will result in a path that
 ends with a separator.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def join(a, *p):
-    &#34;&#34;&#34;Join two or more pathname components, inserting &#39;/&#39; as needed.
-    If any component is an absolute path, all previous path components
-    will be discarded.  An empty last part will result in a path that
-    ends with a separator.&#34;&#34;&#34;
-    a = os.fspath(a)
-    sep = _get_sep(a)
-    path = a
-    try:
-        if not p:
-            path[:0] + sep  #23780: Ensure compatible data type even if p is null.
-        for b in map(os.fspath, p):
-            if b.startswith(sep):
-                path = b
-            elif not path or path.endswith(sep):
-                path += b
-            else:
-                path += sep + b
-    except (TypeError, AttributeError, BytesWarning):
-        genericpath._check_arg_types(&#39;join&#39;, a, *p)
-        raise
-    return path</code></pre>
-</details>
 </dd>
 <dt id="shell.pwd"><code class="name flex">
 <span>def <span class="ident">pwd</span></span>(<span>)</span>
@@ -1428,7 +1335,7 @@ ends with a separator.</p></div>
 </details>
 </dd>
 <dt id="shell.quote"><code class="name flex">
-<span>def <span class="ident">quote</span></span>(<span>s)</span>
+<span>def <span class="ident">quote</span></span>(<span>s: str) ‑> str</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Return a shell-escaped version of the string <code>s</code>.</p></div>
@@ -1436,7 +1343,7 @@ ends with a separator.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def quote(s):
+<pre><code class="python">def quote(s: str) -&gt; str:
     &#34;&#34;&#34;Return a shell-escaped version of the string `s`.
     &#34;&#34;&#34;
     if not s:
@@ -1449,7 +1356,7 @@ ends with a separator.</p></div>
 </details>
 </dd>
 <dt id="shell.readBinaryFile"><code class="name flex">
-<span>def <span class="ident">readBinaryFile</span></span>(<span>name)</span>
+<span>def <span class="ident">readBinaryFile</span></span>(<span>name: str)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Return the binary content of file <code>name</code>.</p></div>
@@ -1457,14 +1364,14 @@ ends with a separator.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def readBinaryFile(name):
+<pre><code class="python">def readBinaryFile(name: str):
     &#34;&#34;&#34;Return the binary content of file `name`.&#34;&#34;&#34;
     with open(name, &#39;rb&#39;) as f:
         return f.read()</code></pre>
 </details>
 </dd>
 <dt id="shell.readFile"><code class="name flex">
-<span>def <span class="ident">readFile</span></span>(<span>name)</span>
+<span>def <span class="ident">readFile</span></span>(<span>name: str)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Return the textual content of file <code>name</code>.</p></div>
@@ -1472,14 +1379,21 @@ ends with a separator.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def readFile(name):
+<pre><code class="python">def readFile(name: str):
     &#34;&#34;&#34;Return the textual content of file `name`.&#34;&#34;&#34;
     with open(name, &#39;r&#39;, encoding=&#39;utf-8&#39;) as f:
         return f.read()</code></pre>
 </details>
 </dd>
+<dt id="shell.realpath"><code class="name flex">
+<span>def <span class="ident">realpath</span></span>(<span>filename, *, strict=False)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Return the canonical path of the specified filename, eliminating any
+symbolic links encountered in the path.</p></div>
+</dd>
 <dt id="shell.removeExt"><code class="name flex">
-<span>def <span class="ident">removeExt</span></span>(<span>p)</span>
+<span>def <span class="ident">removeExt</span></span>(<span>p: str) ‑> str</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Removes the extension of a filename.</p></div>
@@ -1487,13 +1401,13 @@ ends with a separator.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def removeExt(p):
+<pre><code class="python">def removeExt(p: str) -&gt; str:
     &#34;&#34;&#34;Removes the extension of a filename.&#34;&#34;&#34;
     return splitext(p)[0]</code></pre>
 </details>
 </dd>
 <dt id="shell.removeFile"><code class="name flex">
-<span>def <span class="ident">removeFile</span></span>(<span>path)</span>
+<span>def <span class="ident">removeFile</span></span>(<span>path: str)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Removes the given file. Throws an error if <code>path</code> is not a file.</p></div>
@@ -1501,7 +1415,7 @@ ends with a separator.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def removeFile(path):
+<pre><code class="python">def removeFile(path: str):
     &#34;&#34;&#34;
     Removes the given file. Throws an error if `path` is not a file.
     &#34;&#34;&#34;
@@ -1512,36 +1426,36 @@ ends with a separator.</p></div>
 </details>
 </dd>
 <dt id="shell.resolveProg"><code class="name flex">
-<span>def <span class="ident">resolveProg</span></span>(<span>*l)</span>
+<span>def <span class="ident">resolveProg</span></span>(<span>*l: str) ‑> Optional[str]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Return the first program in the list that exist and is runnable.</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; resolveProg()
-&gt;&gt;&gt; resolveProg('foobarbaz', 'python', 'grep')
-'python'
+&gt;&gt;&gt; resolveProg('foobarbaz', 'cat', 'grep')
+'/bin/cat'
 &gt;&gt;&gt; resolveProg('foobarbaz', 'padauz')
 </code></pre></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def resolveProg(*l):
+<pre><code class="python">def resolveProg(*l: str) -&gt; Optional[str]:
     &#34;&#34;&#34;Return the first program in the list that exist and is runnable.
     &gt;&gt;&gt; resolveProg()
-    &gt;&gt;&gt; resolveProg(&#39;foobarbaz&#39;, &#39;python&#39;, &#39;grep&#39;)
-    &#39;python&#39;
+    &gt;&gt;&gt; resolveProg(&#39;foobarbaz&#39;, &#39;cat&#39;, &#39;grep&#39;)
+    &#39;/bin/cat&#39;
     &gt;&gt;&gt; resolveProg(&#39;foobarbaz&#39;, &#39;padauz&#39;)
     &#34;&#34;&#34;
     for x in l:
-        ecode = run(&#39;command -v %s&#39; % quote(x), captureStdout=DEV_NULL,
-                    onError=&#39;ignore&#39;).exitcode
-        if ecode == 0:
-            return x
+        cmd = &#39;command -v %s&#39; % quote(x)
+        result = run(cmd, captureStdout=True, onError=&#39;ignore&#39;)
+        if result.exitcode == 0:
+            return result.stdout.strip()
     return None</code></pre>
 </details>
 </dd>
 <dt id="shell.rm"><code class="name flex">
-<span>def <span class="ident">rm</span></span>(<span>path)</span>
+<span>def <span class="ident">rm</span></span>(<span>path: str, force: bool = False)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Remove the file at <code>path</code>.</p></div>
@@ -1549,15 +1463,17 @@ ends with a separator.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def rm(path):
+<pre><code class="python">def rm(path: str, force: bool=False):
     &#34;&#34;&#34;
     Remove the file at `path`.
     &#34;&#34;&#34;
+    if force and not exists(path):
+        return
     os.remove(path)</code></pre>
 </details>
 </dd>
 <dt id="shell.rmdir"><code class="name flex">
-<span>def <span class="ident">rmdir</span></span>(<span>d, recursive=False)</span>
+<span>def <span class="ident">rmdir</span></span>(<span>d: str, recursive: bool = False)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Remove directory <code>d</code>. Set <code>recursive=True</code> if the directory is not empty.</p></div>
@@ -1565,7 +1481,7 @@ ends with a separator.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def rmdir(d, recursive=False):
+<pre><code class="python">def rmdir(d: str, recursive: bool=False):
     &#34;&#34;&#34;
     Remove directory `d`. Set `recursive=True` if the directory is not empty.
     &#34;&#34;&#34;
@@ -1576,7 +1492,7 @@ ends with a separator.</p></div>
 </details>
 </dd>
 <dt id="shell.run"><code class="name flex">
-<span>def <span class="ident">run</span></span>(<span>cmd: Union[str, list[str]], onError: Literal['raise', 'die', 'ignore'] = 'raise', input: Optional[str] = None, encoding: str = 'utf-8', captureStdout: Union[bool, Callable, TextIO, BinaryIO] = False, captureStderr: bool = False, stderrToStdout: bool = False, cwd: Optional[str] = None, env: Optional[dict] = None, freshEnv: Optional[dict] = None, decodeErrors: Literal['strict', 'ignore', 'replace'] = 'replace', decodeErrorsStdout: Optional[Literal['strict', 'ignore', 'replace']] = None, decodeErrorsStderr: Optional[Literal['strict', 'ignore', 'replace']] = None)</span>
+<span>def <span class="ident">run</span></span>(<span>cmd: Union[list[str], str], onError: Literal['raise', 'die', 'ignore'] = 'raise', input: Union[str, bytes, ForwardRef(None)] = None, encoding: str = 'utf-8', captureStdout: Union[bool, Callable[[str], Any], int, IO[Any], ForwardRef(None)] = False, captureStderr: Union[bool, Callable[[str], Any], int, IO[Any], ForwardRef(None)] = False, stderrToStdout: bool = False, cwd: Optional[str] = None, env: Optional[Dict[str, str]] = None, freshEnv: Optional[Dict[str, str]] = None, decodeErrors: str = 'replace', decodeErrorsStdout: Optional[str] = None, decodeErrorsStderr: Optional[str] = None) ‑> <a title="shell.RunResult" href="#shell.RunResult">RunResult</a></span>
 </code></dt>
 <dd>
 <div class="desc"><p>Runs the given command.</p>
@@ -1587,20 +1503,23 @@ or a string (subject to shell expansion)</li>
 <li><code>onError</code>: what to do if the child process finishes with an exit code different from 0<ul>
 <li>'raise': raise an exception (the default)</li>
 <li>'die': terminate the whole process</li>
-<li>'ignore'</li>
+<li>'ignore': just return the result</li>
 </ul>
 </li>
-<li><code>input</code>: string that is send to the stdin of the child process.</li>
+<li><code>input</code>: string or bytes that is send to the stdin of the child process.</li>
 <li><code>encoding</code>: the encoding for stdin, stdout, and stderr. If <code>encoding == 'raw'</code>,
-then the raw bytes are passed/returned.</li>
+then the raw bytes are passed/returned. It is an error if input is a string
+and <code>encoding == 'raw'</code></li>
 <li><code>captureStdout</code> and <code>captureStderr</code>: what to do with stdout/stderr of the child process. Possible values:<ul>
 <li>False: stdout is not captured and goes to stdout of the parent process (the default)</li>
 <li>True: stdout is captured and returned</li>
 <li>A function: stdout is captured and the result of applying the function to the captured
-output is returned. Use splitLines as this function to split the output into lines</li>
+output is returned. In this case, encoding must not be <code>'raw'</code>.
+Use splitLines as this function to split the output into lines</li>
 <li>An existing file descriptor or a file object: stdout goes to the file descriptor or file</li>
 </ul>
 </li>
+<li><code>stderrToStdout</code>: should stderr be sent to stdout?</li>
 <li><code>cwd</code>: working directory</li>
 <li><code>env</code>: dictionary with additional environment variables.</li>
 <li><code>freshEnv</code>: dictionary with a completely fresh environment.</li>
@@ -1636,20 +1555,20 @@ True
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def run(cmd: Union[str, list[str]],
-        onError: Literal[&#39;raise&#39;, &#39;die&#39;, &#39;ignore&#39;] = &#39;raise&#39;,
-        input: Optional[str]=None,
+<pre><code class="python">def run(cmd: Union[list[str], str],
+        onError: Literal[&#39;raise&#39;, &#39;die&#39;, &#39;ignore&#39;]=&#39;raise&#39;,
+        input: Union[str, bytes, None]=None,
         encoding: str=&#39;utf-8&#39;,
-        captureStdout: Union[bool, Callable, TextIO, BinaryIO]=False,
-        captureStderr: bool=False,
+        captureStdout: Union[bool,Callable[[str], Any],_FILE]=False,
+        captureStderr: Union[bool,Callable[[str], Any],_FILE]=False,
         stderrToStdout: bool=False,
         cwd: Optional[str]=None,
-        env: Optional[dict]=None,
-        freshEnv: Optional[dict]=None,
-        decodeErrors: Literal[&#39;strict&#39;, &#39;ignore&#39;, &#39;replace&#39;]=&#39;replace&#39;,
-        decodeErrorsStdout: Optional[Literal[&#39;strict&#39;, &#39;ignore&#39;, &#39;replace&#39;]]=None,
-        decodeErrorsStderr: Optional[Literal[&#39;strict&#39;, &#39;ignore&#39;, &#39;replace&#39;]]=None
-        ):
+        env: Optional[Dict[str, str]]=None,
+        freshEnv: Optional[Dict[str, str]]=None,
+        decodeErrors: str=&#39;replace&#39;,
+        decodeErrorsStdout: Optional[str]=None,
+        decodeErrorsStderr: Optional[str]=None
+        ) -&gt; RunResult:
     &#34;&#34;&#34;Runs the given command.
 
     Parameters:
@@ -1659,16 +1578,19 @@ True
     * `onError`: what to do if the child process finishes with an exit code different from 0
         * &#39;raise&#39;: raise an exception (the default)
         * &#39;die&#39;: terminate the whole process
-        * &#39;ignore&#39;
-    * `input`: string that is send to the stdin of the child process.
+        * &#39;ignore&#39;: just return the result
+    * `input`: string or bytes that is send to the stdin of the child process.
     * `encoding`: the encoding for stdin, stdout, and stderr. If `encoding == &#39;raw&#39;`,
-        then the raw bytes are passed/returned.
+        then the raw bytes are passed/returned. It is an error if input is a string
+        and `encoding == &#39;raw&#39;`
     * `captureStdout` and `captureStderr`: what to do with stdout/stderr of the child process. Possible values:
         * False: stdout is not captured and goes to stdout of the parent process (the default)
         * True: stdout is captured and returned
         * A function: stdout is captured and the result of applying the function to the captured
-          output is returned. Use splitLines as this function to split the output into lines
+          output is returned. In this case, encoding must not be `&#39;raw&#39;`.
+          Use splitLines as this function to split the output into lines
         * An existing file descriptor or a file object: stdout goes to the file descriptor or file
+    * `stderrToStdout`: should stderr be sent to stdout?
     * `cwd`: working directory
     * `env`: dictionary with additional environment variables.
     * `freshEnv`: dictionary with a completely fresh environment.
@@ -1713,14 +1635,14 @@ True
         decodeErrorsStdout = decodeErrors
     if decodeErrorsStderr is None:
         decodeErrorsStderr = decodeErrors
-    stdoutIsFileLike = type(captureStdout) == int or hasattr(captureStdout, &#39;write&#39;)
-    stdoutIsProcFun = not stdoutIsFileLike and hasattr(captureStdout, &#39;__call__&#39;)
+    stdoutIsFileLike = isinstance(captureStdout, int) or isinstance(captureStdout, IO)
+    stdoutIsProcFun = not stdoutIsFileLike and isinstance(captureStdout, Callable)
     shouldReturnStdout = (stdoutIsProcFun or
                             (type(captureStdout) == bool and captureStdout))
-    stdout = None
+    stdout: _FILE = None
     if shouldReturnStdout:
         stdout = subprocess.PIPE
-    elif stdoutIsFileLike:
+    elif isinstance(captureStdout, int) or isinstance(captureStdout, IO):
         stdout = captureStdout
     stdin = None
     if input:
@@ -1731,10 +1653,15 @@ True
     elif captureStderr:
         stderr = subprocess.PIPE
     input_str = &#39;None&#39;
-    if input:
+    inputBytes: Optional[bytes] = None
+    if input and isinstance(input, str):
         input_str = &#39;&lt;&#39; + str(len(input)) + &#39; characters&gt;&#39;
         if encoding != &#39;raw&#39;:
-            input = input.encode(encoding)
+            inputBytes = input.encode(encoding)
+        else:
+            raise ValueError(&#39;Given str object as input, but encoding is raw&#39;)
+    elif input:
+        inputBytes = input
     _debug(&#39;Running command &#39; + repr(cmd) + &#39; with captureStdout=&#39; + str(captureStdout) +
           &#39;, onError=&#39; + onError + &#39;, input=&#39; + input_str)
     popenEnv = None
@@ -1745,15 +1672,20 @@ True
         popenEnv = freshEnv.copy()
         if env:
             popenEnv.update(env)
+    # Ensure correct ordering of outputs
+    if stdout is None:
+        sys.stdout.flush()
+    if stderr is None:
+        sys.stderr.flush()
     pipe = subprocess.Popen(
         cmd, shell=(type(cmd) == str),
         stdout=stdout, stdin=stdin, stderr=stderr,
         cwd=cwd, env=popenEnv
     )
-    (stdoutData, stderrData) = pipe.communicate(input=input)
-    if stdoutData is not None and encoding != &#39;raw&#39;:
+    (stdoutData, stderrData) = pipe.communicate(input=inputBytes)
+    if stdoutData and encoding != &#39;raw&#39;:
         stdoutData = stdoutData.decode(encoding, errors=decodeErrorsStdout)
-    if stderrData is not None and encoding != &#39;raw&#39;:
+    if stderrData and encoding != &#39;raw&#39;:
         stderrData = stderrData.decode(encoding, errors=decodeErrorsStderr)
     exitcode = pipe.returncode
     if onError == &#39;raise&#39; and exitcode != 0:
@@ -1765,9 +1697,10 @@ True
     if onError == &#39;die&#39; and exitcode != 0:
         sys.exit(exitcode)
     stdoutRes = stdoutData
-    if stdoutRes is None:
+    if not stdoutRes:
         stdoutRes = &#39;&#39;
-    if stdoutIsProcFun:
+    if not stdoutIsFileLike and isinstance(captureStdout, Callable) and \
+        isinstance(stdoutData, str):
         stdoutRes = captureStdout(stdoutData)
     return RunResult(stdoutRes, exitcode)</code></pre>
 </details>
@@ -1780,23 +1713,9 @@ True
 <p>Extension is everything from the last dot to the end, ignoring
 leading dots.
 Returns "(root, ext)"; ext may be empty.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def splitext(p):
-    p = os.fspath(p)
-    if isinstance(p, bytes):
-        sep = b&#39;/&#39;
-        extsep = b&#39;.&#39;
-    else:
-        sep = &#39;/&#39;
-        extsep = &#39;.&#39;
-    return genericpath._splitext(p, sep, None, extsep)</code></pre>
-</details>
 </dd>
 <dt id="shell.splitLines"><code class="name flex">
-<span>def <span class="ident">splitLines</span></span>(<span>s)</span>
+<span>def <span class="ident">splitLines</span></span>(<span>s: str) ‑> list[str]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Split on line endings.
@@ -1806,17 +1725,21 @@ of <code><a title="shell.run" href="#shell.run">run()</a></code>.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def splitLines(s):
+<pre><code class="python">def splitLines(s: str) -&gt; list[str]:
     &#34;&#34;&#34;
     Split on line endings.
     To be used with the `captureStdout` or `captureStderr` parameter
     of `run`.
     &#34;&#34;&#34;
-    return s.strip().split(&#39;\n&#39;)</code></pre>
+    s = s.strip()
+    if not s:
+        return []
+    else:
+        return s.split(&#39;\n&#39;)</code></pre>
 </details>
 </dd>
 <dt id="shell.splitOn"><code class="name flex">
-<span>def <span class="ident">splitOn</span></span>(<span>splitter)</span>
+<span>def <span class="ident">splitOn</span></span>(<span>splitter: str) ‑> Callable[[str], list[str]]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Return a function that splits a string on the given splitter string.</p>
@@ -1836,7 +1759,7 @@ of <code><a title="shell.run" href="#shell.run">run()</a></code>.</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def splitOn(splitter):
+<pre><code class="python">def splitOn(splitter: str) -&gt; Callable[[str], list[str]]:
     &#34;&#34;&#34;Return a function that splits a string on the given splitter string.
 
     To be used with the `captureStdout` or `captureStderr` parameter
@@ -1853,7 +1776,7 @@ of <code><a title="shell.run" href="#shell.run">run()</a></code>.</p>
     &gt;&gt;&gt; splitOn(&#39;X&#39;)(&#34;abcX&#34;)
     [&#39;abc&#39;]
     &#34;&#34;&#34;
-    def f(s):
+    def f(s: str) -&gt; list[str]:
         l = s.split(splitter)
         if l and not l[-1]:
             return l[:-1]
@@ -1863,7 +1786,7 @@ of <code><a title="shell.run" href="#shell.run">run()</a></code>.</p>
 </details>
 </dd>
 <dt id="shell.touch"><code class="name flex">
-<span>def <span class="ident">touch</span></span>(<span>path)</span>
+<span>def <span class="ident">touch</span></span>(<span>path: str)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Create an empty file at <code>path</code>.</p></div>
@@ -1871,7 +1794,7 @@ of <code><a title="shell.run" href="#shell.run">run()</a></code>.</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def touch(path):
+<pre><code class="python">def touch(path: str):
     &#34;&#34;&#34;
     Create an empty file at `path`.
     &#34;&#34;&#34;
@@ -1879,7 +1802,7 @@ of <code><a title="shell.run" href="#shell.run">run()</a></code>.</p>
 </details>
 </dd>
 <dt id="shell.writeBinaryFile"><code class="name flex">
-<span>def <span class="ident">writeBinaryFile</span></span>(<span>name, content)</span>
+<span>def <span class="ident">writeBinaryFile</span></span>(<span>name: str, content: bytes)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Write binary string <code>content</code> to file <code>name</code>.</p></div>
@@ -1887,14 +1810,14 @@ of <code><a title="shell.run" href="#shell.run">run()</a></code>.</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def writeBinaryFile(name, content):
+<pre><code class="python">def writeBinaryFile(name: str, content: bytes):
     &#34;&#34;&#34;Write binary string `content` to file `name`.&#34;&#34;&#34;
     with open(name, &#39;wb&#39;) as f:
         f.write(content)</code></pre>
 </details>
 </dd>
 <dt id="shell.writeFile"><code class="name flex">
-<span>def <span class="ident">writeFile</span></span>(<span>name, content)</span>
+<span>def <span class="ident">writeFile</span></span>(<span>name: str, content: str)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Write text <code>content</code> to file <code>name</code>.</p></div>
@@ -1902,7 +1825,7 @@ of <code><a title="shell.run" href="#shell.run">run()</a></code>.</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def writeFile(name, content):
+<pre><code class="python">def writeFile(name: str, content: str):
     &#34;&#34;&#34;Write text `content` to file `name`.&#34;&#34;&#34;
     with open(name, &#39;w&#39;, encoding=&#39;utf-8&#39;) as f:
         f.write(content)</code></pre>
@@ -1915,7 +1838,7 @@ of <code><a title="shell.run" href="#shell.run">run()</a></code>.</p>
 <dl>
 <dt id="shell.RunError"><code class="flex name class">
 <span>class <span class="ident">RunError</span></span>
-<span>(</span><span>cmd, exitcode, stderr=None)</span>
+<span>(</span><span>cmd: Union[list[str], str], exitcode: int, stderr: Union[str, bytes, ForwardRef(None)] = None)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>This exception is thrown if a program invoked with <code>run(onError='raise')</code>
@@ -1939,7 +1862,9 @@ returns a non-zero exit code.</p>
     * `exitcode`
     * `stderr`: output on stderr (if `run` configured to capture this output)
     &#34;&#34;&#34;
-    def __init__(self, cmd, exitcode, stderr=None):
+    def __init__(self, cmd: Union[str, list[str]],
+                 exitcode: int,
+                 stderr: Union[str,bytes,None]=None):
         self.cmd = cmd
         self.exitcode = exitcode
         self.stderr = stderr
@@ -1956,7 +1881,7 @@ returns a non-zero exit code.</p>
 </dd>
 <dt id="shell.RunResult"><code class="flex name class">
 <span>class <span class="ident">RunResult</span></span>
-<span>(</span><span>stdout, exitcode)</span>
+<span>(</span><span>stdout: Any, exitcode: int)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Represents the result of running a program using the <code><a title="shell.run" href="#shell.run">run()</a></code> function.
@@ -1973,16 +1898,16 @@ was invoked with <code>captureStdout=True</code>).</p></div>
     attribute `stdout` contains the output printed in stdout (only if `run`
     was invoked with `captureStdout=True`).
     &#34;&#34;&#34;
-    def __init__(self, stdout, exitcode):
+    def __init__(self, stdout: Any, exitcode: int):
         self.stdout = stdout
         self.exitcode = exitcode
     def __repr__(self):
         return &#39;RunResult(exitcode=%d, stdout=%r) &#39;% (self.exitcode, self.stdout)
-    def __eq__(self, other):
+    def __eq__(self, other: Any):
         if type(other) is type(self):
             return self.__dict__ == other.__dict__
         return False
-    def __ne__(self, other):
+    def __ne__(self, other: Any):
         return not self.__eq__(other)
     def __hash__(self):
         return hash(self.__dict__)</code></pre>
@@ -1990,7 +1915,7 @@ was invoked with <code>captureStdout=True</code>).</p></div>
 </dd>
 <dt id="shell.ShellError"><code class="flex name class">
 <span>class <span class="ident">ShellError</span></span>
-<span>(</span><span>msg)</span>
+<span>(</span><span>msg: str)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>The base class for exceptions thrown by this module.</p></div>
@@ -2000,7 +1925,7 @@ was invoked with <code>captureStdout=True</code>).</p></div>
 </summary>
 <pre><code class="python">class ShellError(BaseException):
     &#34;&#34;&#34;The base class for exceptions thrown by this module.&#34;&#34;&#34;
-    def __init__(self, msg):
+    def __init__(self, msg: str):
         self.msg = msg
     def __str__(self):
         return self.msg</code></pre>
@@ -2016,7 +1941,7 @@ was invoked with <code>captureStdout=True</code>).</p></div>
 </dd>
 <dt id="shell.tempDir"><code class="flex name class">
 <span>class <span class="ident">tempDir</span></span>
-<span>(</span><span>suffix='', prefix='tmp', dir=None, onException=True, delete=True)</span>
+<span>(</span><span>suffix: str = '', prefix: str = 'tmp', dir: Optional[str] = None, onException: bool = True, delete: bool = True)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Scoped creation of a temporary directory, to be used in a <code>with</code>-block:</p>
@@ -2045,7 +1970,8 @@ is only performed if the <code>with</code>-block finishes without an exception.<
     With `delete=False`, deletion is deactivated. With `onException=False`, deletion
     is only performed if the `with`-block finishes without an exception.
     &#34;&#34;&#34;
-    def __init__(self, suffix=&#39;&#39;, prefix=&#39;tmp&#39;, dir=None, onException=True, delete=True):
+    def __init__(self, suffix: str=&#39;&#39;, prefix: str=&#39;tmp&#39;, dir: Optional[str]=None,
+                 onException: bool=True, delete: bool=True):
         self.suffix = suffix
         self.prefix = prefix
         self.dir = dir
@@ -2057,17 +1983,18 @@ is only performed if the <code>with</code>-block finishes without an exception.<
                                        dir=self.dir,
                                        deleteAtExit=False)
         return self.dir_to_delete
-    def __exit__(self, exc_type, value, traceback):
+    def __exit__(self, exc_type: Any, value: Any, traceback: Any):
         if exc_type is not None and not self.onException:
             return False # reraise
         if self.delete:
-            rmdir(self.dir_to_delete, recursive=True)
+            if isDir(self.dir_to_delete):
+                rmdir(self.dir_to_delete, recursive=True)
         return False # reraise expection</code></pre>
 </details>
 </dd>
 <dt id="shell.workingDir"><code class="flex name class">
 <span>class <span class="ident">workingDir</span></span>
-<span>(</span><span>new_dir)</span>
+<span>(</span><span>new_dir: str)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Scoped change of working directory, to be used in a <code>with</code>-block:</p>
@@ -2089,12 +2016,12 @@ is only performed if the <code>with</code>-block finishes without an exception.<
     # previous working directory is restored
     ```
     &#34;&#34;&#34;
-    def __init__(self, new_dir):
+    def __init__(self, new_dir: str):
         self.new_dir = new_dir
     def __enter__(self):
         self.old_dir = pwd()
         cd(self.new_dir)
-    def __exit__(self, exc_type, value, traceback):
+    def __exit__(self, exc_type: Any, value: Any, traceback: Any):
         cd(self.old_dir)
         return False # reraise expection</code></pre>
 </details>
@@ -2142,12 +2069,14 @@ is only performed if the <code>with</code>-block finishes without an exception.<
 <li><code><a title="shell.mkTempDir" href="#shell.mkTempDir">mkTempDir</a></code></li>
 <li><code><a title="shell.mkTempFile" href="#shell.mkTempFile">mkTempFile</a></code></li>
 <li><code><a title="shell.mkdir" href="#shell.mkdir">mkdir</a></code></li>
+<li><code><a title="shell.mkdirs" href="#shell.mkdirs">mkdirs</a></code></li>
 <li><code><a title="shell.mv" href="#shell.mv">mv</a></code></li>
 <li><code><a title="shell.pjoin" href="#shell.pjoin">pjoin</a></code></li>
 <li><code><a title="shell.pwd" href="#shell.pwd">pwd</a></code></li>
 <li><code><a title="shell.quote" href="#shell.quote">quote</a></code></li>
 <li><code><a title="shell.readBinaryFile" href="#shell.readBinaryFile">readBinaryFile</a></code></li>
 <li><code><a title="shell.readFile" href="#shell.readFile">readFile</a></code></li>
+<li><code><a title="shell.realpath" href="#shell.realpath">realpath</a></code></li>
 <li><code><a title="shell.removeExt" href="#shell.removeExt">removeExt</a></code></li>
 <li><code><a title="shell.removeFile" href="#shell.removeFile">removeFile</a></code></li>
 <li><code><a title="shell.resolveProg" href="#shell.resolveProg">resolveProg</a></code></li>
