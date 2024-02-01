@@ -94,11 +94,12 @@ class RunResult:
     attribute `stdout` contains the output printed in stdout (only if `run`
     was invoked with `captureStdout=True`).
     """
-    def __init__(self, stdout: Any, exitcode: int):
+    def __init__(self, stdout: Any, stderr: Any, exitcode: int):
         self.stdout = stdout
+        self.stderr = stderr
         self.exitcode = exitcode
     def __repr__(self):
-        return 'RunResult(exitcode=%d, stdout=%r) '% (self.exitcode, self.stdout)
+        return 'RunResult(exitcode=%d, stdout=%r, stderr=%r)' % (self.exitcode, self.stdout, self.stderr)
     def __eq__(self, other: Any):
         if type(other) is type(self):
             return self.__dict__ == other.__dict__
@@ -127,14 +128,19 @@ class RunError(ShellError):
     """
     def __init__(self, cmd: Union[str, list[str]],
                  exitcode: int,
-                 stderr: Union[str,bytes,None]=None):
+                 stdout: Union[str,bytes],
+                 stderr: Union[str,bytes]):
         self.cmd = cmd
         self.exitcode = exitcode
         self.stderr = stderr
+        self.stdout = stdout
         msg = 'Command ' + repr(self.cmd) + " failed with exit code " + str(self.exitcode)
         if stderr:
             msg = msg + '\nstderr:\n' + str(stderr)
         super(RunError, self).__init__(msg)
+    def __repr__(self):
+        return 'RunError(cmd=%r, exitcode=%d, stdout=%r, stderr=%r)' % \
+            (self.cmd, self.exitcode, self.stdout, self.stderr)
 
 def splitOn(splitter: str) -> Callable[[str], list[str]]:
     """Return a function that splits a string on the given splitter string.
@@ -224,25 +230,29 @@ def run(cmd: Union[list[str], str],
 
     Starting with Python 3.5, the `subprocess` module defines a similar function.
 
-    >>> run('/bin/echo foo') == RunResult(exitcode=0, stdout='')
-    True
-    >>> run('/bin/echo -n foo', captureStdout=True) == RunResult(exitcode=0, stdout='foo')
-    True
-    >>> run('/bin/echo -n foo', captureStdout=lambda s: s + 'X') == \
-        RunResult(exitcode=0, stdout='fooX')
-    True
-    >>> run('/bin/echo foo', captureStdout=False) == RunResult(exitcode=0, stdout='')
-    True
-    >>> run('cat', captureStdout=True, input='blub') == RunResult(exitcode=0, stdout='blub')
-    True
+    >>> run('/bin/echo foo')
+    RunResult(exitcode=0, stdout='', stderr='')
+    >>> run('/bin/echo -n foo', captureStdout=True)
+    RunResult(exitcode=0, stdout='foo', stderr='')
+    >>> run('/bin/echo -n foo', captureStdout=lambda s: s + 'X')
+    RunResult(exitcode=0, stdout='fooX', stderr='')
+    >>> run('/bin/echo foo', captureStdout=False)
+    RunResult(exitcode=0, stdout='', stderr='')
+    >>> run('cat', captureStdout=True, input='blub')
+    RunResult(exitcode=0, stdout='blub', stderr='')
     >>> try:
-    ...     run('false')
+    ...     run('/bin/echo -n foo 1>&2; /bin/echo -n bar; false', captureStdout=True, captureStderr=True)
     ...     raise 'exception expected'
-    ... except RunError:
-    ...     pass
+    ... except RunError as e:
+    ...     print(repr(e))
     ...
-    >>> run('false', onError='ignore') == RunResult(exitcode=1, stdout='')
-    True
+    RunError(cmd='/bin/echo -n foo 1>&2; /bin/echo -n bar; false', exitcode=1, stdout='bar', stderr='foo')
+    >>> run('false', onError='ignore')
+    RunResult(exitcode=1, stdout='', stderr='')
+    >>> run('/bin/echo -n foo; /bin/echo -n bar 1>&2', captureStdout=True, captureStderr=True)
+    RunResult(exitcode=0, stdout='foo', stderr='bar')
+    >>> run('/bin/echo -n foo 1>&2; /bin/echo -n bar', captureStderr=lambda s: s + 'X')
+    RunResult(exitcode=0, stdout='', stderr='fooX')
     """
     if type(cmd) != str and type(cmd) != list:
         raise ShellError('cmd parameter must be a string or a list')
@@ -253,9 +263,7 @@ def run(cmd: Union[list[str], str],
         decodeErrorsStdout = decodeErrors
     if decodeErrorsStderr is None:
         decodeErrorsStderr = decodeErrors
-    stdoutIsFileLike = isinstance(captureStdout, int) or isinstance(captureStdout, IO)
-    stdoutIsProcFun = not stdoutIsFileLike and isinstance(captureStdout, Callable)
-    shouldReturnStdout = (stdoutIsProcFun or
+    shouldReturnStdout = (isinstance(captureStdout, Callable) or
                             (type(captureStdout) == bool and captureStdout))
     stdout: _FILE = None
     if shouldReturnStdout:
@@ -301,26 +309,25 @@ def run(cmd: Union[list[str], str],
         cwd=cwd, env=popenEnv
     )
     (stdoutData, stderrData) = pipe.communicate(input=inputBytes)
-    if stdoutData and encoding != 'raw':
-        stdoutData = stdoutData.decode(encoding, errors=decodeErrorsStdout)
-    if stderrData and encoding != 'raw':
-        stderrData = stderrData.decode(encoding, errors=decodeErrorsStderr)
+    stdoutData = massageOutput(stdoutData, encoding, decodeErrorsStdout, captureStdout)
+    stderrData = massageOutput(stderrData, encoding, decodeErrorsStderr, captureStderr)
     exitcode = pipe.returncode
     if onError == 'raise' and exitcode != 0:
-        d = stderrData
-        if stderrToStdout:
-            d = stdoutData
-        err = RunError(cmd, exitcode, d)
+        err = RunError(cmd, exitcode, stdoutData, stderrData)
         raise err
     if onError == 'die' and exitcode != 0:
         sys.exit(exitcode)
-    stdoutRes = stdoutData
-    if not stdoutRes:
-        stdoutRes = ''
-    if not stdoutIsFileLike and isinstance(captureStdout, Callable) and \
-        isinstance(stdoutData, str):
-        stdoutRes = captureStdout(stdoutData)
-    return RunResult(stdoutRes, exitcode)
+    return RunResult(stdoutData, stderrData, exitcode)
+
+def massageOutput(data: Any, encoding: str, decodeErrors: str,
+                  capture: Union[bool,Callable[[str], Any],_FILE]):
+    if data and encoding != 'raw':
+        data = data.decode(encoding, errors=decodeErrors)
+    if not data:
+        data = ''
+    if isinstance(capture, Callable) and isinstance(data, str):
+        data = capture(data)
+    return data
 
 # the quote function is stolen from https://hg.python.org/cpython/file/3.5/Lib/shlex.py
 _find_unsafe = re.compile(r'[^\w@%+=:,./-]').search
