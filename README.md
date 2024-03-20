@@ -26,6 +26,10 @@ magicFiles = run(['grep', 'magic'] + files, captureStdout=splitLines, onError='i
 
 ## Changelog
 
+* 0.4.0 (2024-03-20)
+  * re-implement run in terms of subprocess.run. This fixes a bug that caused stdout to
+    disappear.
+
 * 0.3.0 (2024-02-01)
   * uniform treatment when capturing stdout and stderr. This lead to changes to RunResult
     and RunError which are slightly backwards incompatible.
