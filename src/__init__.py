@@ -50,7 +50,7 @@ except:
 
 DEV_NULL = _devNull
 
-_FILE = Union[int, IO[Any], None]
+_FILE = Union[int, IO[Any]]
 
 atexit.register(lambda: DEV_NULL.close())
 
@@ -179,19 +179,55 @@ def splitLines(s: str) -> list[str]:
     else:
         return s.split('\n')
 
+def _decode(input: Union[str, bytes, None], encoding: str, errors: str) -> Optional[bytes]:
+    inputBytes: Optional[bytes] = None
+    if input and isinstance(input, str):
+        if encoding != 'raw':
+            inputBytes = input.encode(encoding, errors)
+        else:
+            raise ValueError('Given str object as input, but encoding is raw')
+    elif input:
+        inputBytes = input
+    return inputBytes
+
+CaptureType = Union[bool, Callable[[str], Any], _FILE, None]
+
+def _handleCapture(capture: CaptureType) -> Optional[_FILE]:
+    if capture == True:
+        return subprocess.PIPE
+    elif callable(capture):
+        return subprocess.PIPE
+    elif capture is None:
+        return None
+    else:
+        return capture
+
+def _massageOutput(data: Any, encoding: str, decodeErrors: Optional[str],
+                  capture: CaptureType):
+    if not decodeErrors:
+        decodeErrors = 'strict'
+    if data and encoding != 'raw':
+        data = data.decode(encoding, errors=decodeErrors)
+    if not data:
+        data = ''
+    if isinstance(capture, Callable) and isinstance(data, str):
+        data = capture(data)
+    return data
+
 def run(cmd: Union[list[str], str],
         onError: Literal['raise', 'die', 'ignore']='raise',
         input: Union[str, bytes, None]=None,
         encoding: str='utf-8',
-        captureStdout: Union[bool,Callable[[str], Any],_FILE]=False,
-        captureStderr: Union[bool,Callable[[str], Any],_FILE]=False,
+        captureStdout: Union[bool, Callable[[str], Any], _FILE, None]=False,
+        captureStderr: Union[bool, Callable[[str], Any], _FILE, None]=False,
         stderrToStdout: bool=False,
         cwd: Optional[str]=None,
         env: Optional[Dict[str, str]]=None,
         freshEnv: Optional[Dict[str, str]]=None,
         decodeErrors: str='replace',
         decodeErrorsStdout: Optional[str]=None,
-        decodeErrorsStderr: Optional[str]=None
+        decodeErrorsStderr: Optional[str]=None,
+        encodeErrorsStdin: Optional[str]=None
         ) -> RunResult:
     """Runs the given command.
 
@@ -217,10 +253,11 @@ def run(cmd: Union[list[str], str],
     * `stderrToStdout`: should stderr be sent to stdout?
     * `cwd`: working directory
     * `env`: dictionary with additional environment variables.
-    * `freshEnv`: dictionary with a completely fresh environment.
-    * `decodeErrors`: how to handle decoding errors on stdout and stderr.
-    * `decodeErrorsStdout` and `decodeErrorsStderr`: overwrite the value of decodeErrors for stdout
-        or stderr
+    * `freshEnv`: dictionary with a completely fresh environment. If `env` is also given, then
+         `freshEnv` is ignored.
+    * `decodeErrors`: how to handle decoding/encoding errors on stdout and stderr and stdin.
+    * `decodeErrorsStdout` and `decodeErrorsStderr` and `encodeErrorsStdin`: overwrite the value
+          of decodeErrors for stdout or stderr or stdin
 
     Returns:
       a `RunResult` value, given access to the captured stdout of the child process (if it was
@@ -228,7 +265,8 @@ def run(cmd: Union[list[str], str],
 
     Raises: a `RunError` if `onError='raise'` and the command terminates with a non-zero exit code.
 
-    Starting with Python 3.5, the `subprocess` module defines a similar function.
+    Starting with Python 3.5, the `subprocess` module defines a similar function. This function
+    is just a wrapper for it.
 
     >>> run('/bin/echo foo')
     RunResult(exitcode=0, stdout='', stderr='')
@@ -254,80 +292,40 @@ def run(cmd: Union[list[str], str],
     >>> run('/bin/echo -n foo 1>&2; /bin/echo -n bar', captureStderr=lambda s: s + 'X')
     RunResult(exitcode=0, stdout='', stderr='fooX')
     """
-    if type(cmd) != str and type(cmd) != list:
-        raise ShellError('cmd parameter must be a string or a list')
-    if type(cmd) == str:
-        cmd = cmd.replace('\x00', ' ')
-        cmd = cmd.replace('\n', ' ')
-    if decodeErrorsStdout is None:
-        decodeErrorsStdout = decodeErrors
-    if decodeErrorsStderr is None:
-        decodeErrorsStderr = decodeErrors
-    shouldReturnStdout = (isinstance(captureStdout, Callable) or
-                            (type(captureStdout) == bool and captureStdout))
-    stdout: _FILE = None
-    if shouldReturnStdout:
-        stdout = subprocess.PIPE
-    elif isinstance(captureStdout, int) or isinstance(captureStdout, IO):
-        stdout = captureStdout
-    stdin = None
-    if input:
-        stdin = subprocess.PIPE
-    stderr = None
+    shell = isinstance(cmd, str)
+    input = _decode(input, encoding, encodeErrorsStdin or decodeErrors)
+    stdout = _handleCapture(captureStdout)
     if stderrToStdout:
         stderr = subprocess.STDOUT
-    elif captureStderr:
-        stderr = subprocess.PIPE
-    input_str = 'None'
-    inputBytes: Optional[bytes] = None
-    if input and isinstance(input, str):
-        input_str = '<' + str(len(input)) + ' characters>'
-        if encoding != 'raw':
-            inputBytes = input.encode(encoding)
-        else:
-            raise ValueError('Given str object as input, but encoding is raw')
-    elif input:
-        inputBytes = input
-    _debug('Running command ' + repr(cmd) + ' with captureStdout=' + str(captureStdout) +
-          ', onError=' + onError + ', input=' + input_str)
-    popenEnv = None
+    else:
+        stderr = _handleCapture(captureStderr)
+    runEnv = None
     if env:
-        popenEnv = os.environ.copy()
-        popenEnv.update(env)
+        runEnv = os.environ.copy()
+        runEnv.update(env)
     elif freshEnv:
-        popenEnv = freshEnv.copy()
+        runEnv = freshEnv.copy()
         if env:
-            popenEnv.update(env)
+            runEnv.update(env)
     # Ensure correct ordering of outputs
     if stdout is None:
         sys.stdout.flush()
     if stderr is None:
         sys.stderr.flush()
-    pipe = subprocess.Popen(
-        cmd, shell=(type(cmd) == str),
-        stdout=stdout, stdin=stdin, stderr=stderr,
-        cwd=cwd, env=popenEnv
-    )
-    (stdoutData, stderrData) = pipe.communicate(input=inputBytes)
-    stdoutData = massageOutput(stdoutData, encoding, decodeErrorsStdout, captureStdout)
-    stderrData = massageOutput(stderrData, encoding, decodeErrorsStderr, captureStderr)
-    exitcode = pipe.returncode
+    if _PYSHELL_DEBUG:
+        _debug(f'subprocess.run({cmd}, shell={shell}, input={input}, stdout={stdout}, ' \
+              f'stderr={stderr}, cwd={cwd}, env={runEnv})')
+    res = subprocess.run(cmd, shell=shell, input=input, stdout=stdout, stderr=stderr, cwd=cwd,
+                         env=runEnv)
+    stdoutData = _massageOutput(res.stdout, encoding, decodeErrorsStdout or decodeErrors, captureStdout)
+    stderrData = _massageOutput(res.stderr, encoding, decodeErrorsStderr or decodeErrors, captureStderr)
+    exitcode = res.returncode
     if onError == 'raise' and exitcode != 0:
         err = RunError(cmd, exitcode, stdoutData, stderrData)
         raise err
     if onError == 'die' and exitcode != 0:
         sys.exit(exitcode)
     return RunResult(stdoutData, stderrData, exitcode)
-
-def massageOutput(data: Any, encoding: str, decodeErrors: str,
-                  capture: Union[bool,Callable[[str], Any],_FILE]):
-    if data and encoding != 'raw':
-        data = data.decode(encoding, errors=decodeErrors)
-    if not data:
-        data = ''
-    if isinstance(capture, Callable) and isinstance(data, str):
-        data = capture(data)
-    return data
 
 # the quote function is stolen from https://hg.python.org/cpython/file/3.5/Lib/shlex.py
 _find_unsafe = re.compile(r'[^\w@%+=:,./-]').search
