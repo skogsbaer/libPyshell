@@ -430,13 +430,15 @@ def removeFile(path: str):
 
 def cp(src: str, target: str):
     """
-    Copy `src` to `target`.
+    Copy `src` to `target`. Behaves like the cp shell command.
 
     * If `src` is a file and `target` is a file: overwrites `target`.
     * If `src` is a file and `target` is a dirname: places the copy in directory `target`,
       with the basename of `src.
-    * If `src` is a directory then `target` must also be a directory: copies
-      the `src` directory (*not* its content) to `target`.
+    * If `src` is a directory and `target` exists, then `target` must also be a directory:
+      copies the `src` directory (*not* its content) to `target`.
+    * If `src` is a directory and `target` does not exist: copies the `src` directory
+      and names the copy `target`.
     """
     if isFile(src):
         if isDir(target):
@@ -581,7 +583,7 @@ def _registerAtExit(action: Any, mode: AtExitMode):
 def mkTempFile(suffix: str='', prefix: str='',
                dir:Optional[str]=None,
                deleteAtExit:AtExitMode=True):
-    """Create a temporary file.
+    """Create a temporary file name.
 
     `deleteAtExit` controls if and how the file is deleted once the shell sript terminates.
    It has one of the following values.
