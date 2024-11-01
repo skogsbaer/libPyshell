@@ -513,22 +513,34 @@ class workingDir:
         cd(self.old_dir)
         return False # reraise expection
 
-def rm(path: str, force: bool=False):
+def rm(path: str, force: bool=False, failOnError: bool=True):
     """
     Remove the file at `path`.
     """
     if force and not exists(path):
         return
-    os.remove(path)
+    try:
+        os.remove(path)
+    except Exception as e:
+        if failOnError:
+            raise
+        else:
+            sys.stderr.write(str(e) + '\n')
 
-def rmdir(d: str, recursive: bool=False):
+def rmdir(d: str, recursive: bool=False, failOnError: bool=True):
     """
     Remove directory `d`. Set `recursive=True` if the directory is not empty.
     """
-    if recursive:
-        shutil.rmtree(d)
-    else:
-        os.rmdir(d)
+    try:
+        if recursive:
+            shutil.rmtree(d)
+        else:
+            os.rmdir(d)
+    except Exception as e:
+        if failOnError:
+            raise
+        else:
+            sys.stderr.write(str(e) + '\n')
 
 # See https://stackoverflow.com/questions/9741351/how-to-find-exit-code-or-reason-when-atexit-callback-is-called-in-python
 class _ExitHooks(object):
@@ -598,7 +610,7 @@ def mkTempFile(suffix: str='', prefix: str='',
     if deleteAtExit:
         def action():
             if isFile(f):
-                rm(f)
+                rm(f, failOnError=False)
         _registerAtExit(action, deleteAtExit)
     return f
 
@@ -612,7 +624,7 @@ def mkTempDir(suffix: str='', prefix: str='tmp',
     if deleteAtExit:
         def action():
             if isDir(d):
-                rmdir(d, True)
+                rmdir(d, recursive=True, failOnError=False)
         _registerAtExit(action, deleteAtExit)
     return d
 
@@ -648,7 +660,7 @@ class tempDir:
             return False # reraise
         if self.delete:
             if isDir(self.dir_to_delete):
-                rmdir(self.dir_to_delete, recursive=True)
+                rmdir(self.dir_to_delete, recursive=True, failOnError=False)
         return False # reraise expection
 
 def ls(d: str, *globs: str) -> list[str]:
