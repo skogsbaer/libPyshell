@@ -197,7 +197,7 @@ def _handleCapture(capture: CaptureType) -> Optional[_FILE]:
         return subprocess.PIPE
     elif callable(capture):
         return subprocess.PIPE
-    elif capture is None:
+    elif capture == False:
         return None
     else:
         return capture
