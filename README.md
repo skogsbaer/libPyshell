@@ -26,6 +26,10 @@ magicFiles = run(['grep', 'magic'] + files, captureStdout=splitLines, onError='i
 
 ## Changelog
 
+* 0.4.1 (2024-09-12)
+  * fix capture handling
+  * add failOnError option to rm commands
+
 * 0.4.0 (2024-03-20)
   * re-implement run in terms of subprocess.run. This fixes a bug that caused stdout to
     disappear.
