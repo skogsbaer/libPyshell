@@ -227,7 +227,8 @@ def run(cmd: Union[list[str], str],
         decodeErrors: str='replace',
         decodeErrorsStdout: Optional[str]=None,
         decodeErrorsStderr: Optional[str]=None,
-        encodeErrorsStdin: Optional[str]=None
+        encodeErrorsStdin: Optional[str]=None,
+        timeout: Optional[int]=None
         ) -> RunResult:
     """Runs the given command.
 
@@ -258,7 +259,8 @@ def run(cmd: Union[list[str], str],
     * `decodeErrors`: how to handle decoding/encoding errors on stdout and stderr and stdin.
     * `decodeErrorsStdout` and `decodeErrorsStderr` and `encodeErrorsStdin`: overwrite the value
           of decodeErrors for stdout or stderr or stdin
-
+    * `timeout`: an optional timeout value in seconds. If a timeout occurs, the exit code will
+      be 124 (as for the unix timeout command)
     Returns:
       a `RunResult` value, given access to the captured stdout of the child process (if it was
       captured at all) and to the exit code of the child process.
@@ -315,11 +317,20 @@ def run(cmd: Union[list[str], str],
     if _PYSHELL_DEBUG:
         _debug(f'subprocess.run({cmd}, shell={shell}, input={input}, stdout={stdout}, ' \
               f'stderr={stderr}, cwd={cwd}, env={runEnv})')
-    res = subprocess.run(cmd, shell=shell, input=input, stdout=stdout, stderr=stderr, cwd=cwd,
-                         env=runEnv)
-    stdoutData = _massageOutput(res.stdout, encoding, decodeErrorsStdout or decodeErrors, captureStdout)
-    stderrData = _massageOutput(res.stderr, encoding, decodeErrorsStderr or decodeErrors, captureStderr)
-    exitcode = res.returncode
+    try:
+        res = subprocess.run(cmd, shell=shell, input=input, stdout=stdout, stderr=stderr, cwd=cwd,
+                            env=runEnv, timeout=timeout)
+        out = res.stdout
+        err = res.stderr
+        exitcode = res.returncode
+        hadTimeout = False
+    except subprocess.TimeoutExpired as e:
+        out = e.stdout
+        err = e.stderr
+        exitcode = 124
+        hadTimeout = True
+    stdoutData = _massageOutput(out, encoding, decodeErrorsStdout or decodeErrors, captureStdout)
+    stderrData = _massageOutput(err, encoding, decodeErrorsStderr or decodeErrors, captureStderr)
     if onError == 'raise' and exitcode != 0:
         err = RunError(cmd, exitcode, stdoutData, stderrData)
         raise err
