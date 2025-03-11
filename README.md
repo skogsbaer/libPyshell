@@ -26,6 +26,9 @@ magicFiles = run(['grep', 'magic'] + files, captureStdout=splitLines, onError='i
 
 ## Changelog
 
+* 0.5.0 (2025-03-11)
+  * support of timeouts for run
+
 * 0.4.1 (2024-09-12)
   * fix capture handling
   * add failOnError option to rm commands
