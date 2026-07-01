@@ -26,6 +26,10 @@ magicFiles = run(['grep', 'magic'] + files, captureStdout=splitLines, onError='i
 
 ## Changelog
 
+* 0.6.6 (2026-07-01)
+  * switch to static typing
+  * make the package PEP 561-typed
+
 * 0.5.0 (2025-03-11)
   * support of timeouts for run
 

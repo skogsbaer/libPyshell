@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
-from distutils.core import setup
+from setuptools import setup
 
-VERSION = '0.5.0'
+VERSION = '0.6.0'
 
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
@@ -17,5 +17,9 @@ setup(name='libPyshell',
       url='https://github.com/skogsbaer/libPyshell',
       package_dir={'shell': 'src'},
       packages=['shell'],
+      # PEP 561: ship the py.typed marker so type checkers treat the
+      # package as typed for downstream consumers.
+      package_data={'shell': ['py.typed']},
+      zip_safe=False,
       python_requires='>=3.9'
       )

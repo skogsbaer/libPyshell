@@ -1,1 +1,2 @@
 exclude src/shell.py
+include src/py.typed

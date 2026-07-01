@@ -1,3 +1,7 @@
 {
-    "reportWildcardImportFromLibrary": false
+    "include": ["src", "tests"],
+    "extraPaths": ["src"],
+    "typeCheckingMode": "strict",
+    "reportWildcardImportFromLibrary": false,
+    "pythonVersion": "3.9"
 }

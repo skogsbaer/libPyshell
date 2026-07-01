@@ -323,12 +323,10 @@ def run(cmd: Union[list[str], str],
         out = res.stdout
         err = res.stderr
         exitcode = res.returncode
-        hadTimeout = False
     except subprocess.TimeoutExpired as e:
         out = e.stdout
         err = e.stderr
         exitcode = 124
-        hadTimeout = True
     stdoutData = _massageOutput(out, encoding, decodeErrorsStdout or decodeErrors, captureStdout)
     stderrData = _massageOutput(err, encoding, decodeErrorsStderr or decodeErrors, captureStderr)
     if onError == 'raise' and exitcode != 0:
@@ -617,7 +615,9 @@ def mkTempFile(suffix: str='', prefix: str='',
     """
 
 
-    f = tempfile.mktemp(suffix, prefix, dir)
+    # mktemp is deprecated because it only reserves a name without creating the file,
+    # which is exactly the contract of mkTempFile (the caller creates the file later).
+    f = tempfile.mktemp(suffix, prefix, dir)  # pyright: ignore[reportDeprecated]
     if deleteAtExit:
         def action():
             if isFile(f):
@@ -722,8 +722,7 @@ def _openForTee(x: Any) -> _FILE:
     if type(x) == str:
         return open(x, 'wb')
     elif type(x) == tuple:
-        name: Any = x[0]
-        mode: Any = x[1]
+        name, mode = cast('tuple[str, str]', x)
         if mode == 'w':
             return open(name, 'wb')
         elif mode == 'a':
