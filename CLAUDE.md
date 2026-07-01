@@ -5,6 +5,8 @@ See @README.md for the purpose and for examples of this library.
 - Run tests:
   - `run-tests` (fast, only for the current python version)
   - `run-tests-all-pyversions` (slow, for all supported python versions)
+- Definition of done: all tests running, no type errors
+  - Commands: `run-tests` and `run-typecheck` must both succeed
 
 ## Static typing
 
